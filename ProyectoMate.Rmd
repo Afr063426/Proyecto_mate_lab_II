@@ -1,0 +1,158 @@
+---
+title: "Proyecto"
+author: "Daniel Sabater"
+date: '2022-06-05'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+#Programacion hecha por   Ricardo Acuña, Francisco Cambronero, Joshua Cervantes, Moisés Monge y Daniel Sabater
+#Se cargan los paquetes
+knitr::opts_chunk$set(echo = FALSE)
+options(scipen = 999)
+library(lifecontingencies)
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(kableExtra)
+library(xtable)
+library(stringr)
+#library(xts)
+#library(tinytex)
+
+
+#Se cargan las bases de datos
+
+Afiliados_31_12_2020 <- read_excel("Afiliados_31_12_2020.xlsx")
+Pensionados_31_12_2020 <- read_excel("Pensionados_31_12_2020.xlsx")
+tabla_mortalidad_mujeres<-read_excel("tabla_mortalidad_mujeres.xlsx")
+tabla_mortalidad_hombres<-read_excel("tabla_mortalidad_hombres.xlsx")
+
+
+
+TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xls", 
+    sheet = "Hombres"))
+TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xls", 
+    sheet = "Mujeres"))
+
+
+
+#Se genera lista con las tablas actuariales de los hombres
+
+ListaDeTablasHombres <- list()
+
+
+for (j in 1:(length(TablaDinamica_lxsHombres)-1)){
+    
+    ListaDeTablasHombres[[j]] <- with(TablaDinamica_lxsHombres,
+                       new(
+                         "actuarialtable",
+                         interest = 0.06,
+                         x = TablaDinamica_lxsHombres[,1],
+                         lx = TablaDinamica_lxsHombres[,j+1] ,
+                         name = paste("E",(j-1), sep = "")
+                       ))
+}
+
+names(ListaDeTablasHombres)<-paste("E",seq(0,115), sep = "")
+
+
+#Se genera lista con las tablas actuariales de las mujeres
+
+ListaDeTablasMujeres <- list()
+for (j in 1:(length(TablaDinamica_lxsMujeres)-1)){
+    
+    ListaDeTablasMujeres[[j]] <- with(TablaDinamica_lxsMujeres,
+                       new(
+                         "actuarialtable",
+                         interest = 0.06,
+                         x = TablaDinamica_lxsMujeres[,1],
+                         lx = TablaDinamica_lxsMujeres[,j+1] ,
+                         name = paste("E",(j-1), sep = "")
+                       ))
+}
+names(ListaDeTablasMujeres)<-paste("E",seq(0,115), sep = "")
+
+#Se elimina las tablas lm
+
+#rm(TablaDinamica_lxsMujeres,TablaDinamica_lxsHombres )
+
+#Se calcula la edad cumplida de la personas
+dia_de_evaluacion<-as.Date('31/12/2020',format='%d/%m/%Y')
+
+edad<-floor(time_length(difftime(
+    dia_de_evaluacion,
+    as.Date(as.POSIXct(Afiliados_31_12_2020$FEC_NACIMIENTO),'UTC')),'years'))
+
+Afiliados_31_12_2020<-Afiliados_31_12_2020%>%mutate(FEC_INGRESO=paste(substr(FEC_INGRESO,1,4),
+                    '/',substr(FEC_INGRESO,5,6),'/',substr(FEC_INGRESO,7,8),sep=''))
+
+antiguedad<-time_length(difftime(
+            dia_de_evaluacion,
+            as.Date(Afiliados_31_12_2020$FEC_INGRESO,
+            '%Y/%m/%d')),
+            'years')
+Afiliados_31_12_2020<-Afiliados_31_12_2020%>%mutate('Edad'=edad,'Antiguedad'=antiguedad)
+#Se calcula edad de los pensionados
+Pensionados_31_12_2020<-Pensionados_31_12_2020%>%mutate(FEC_NAC=paste(substr(FEC_NAC,1,4),
+                    '/',substr(FEC_NAC,5,6),'/',substr(FEC_NAC,7,8),sep=''))
+Pensionados_31_12_2020<-Pensionados_31_12_2020%>%mutate(FEC_RIG_PEN=paste(substr(FEC_RIG_PEN,1,4),
+                    '/',substr(FEC_RIG_PEN,5,6),'/',substr(FEC_RIG_PEN,7,8),sep=''))
+edad<-floor(time_length(difftime(
+            dia_de_evaluacion,
+            as.Date(Pensionados_31_12_2020$FEC_NAC,
+            '%Y/%m/%d')),
+            'years'))
+tiempo_pension<-floor(time_length(difftime(
+            dia_de_evaluacion,
+            as.Date(Pensionados_31_12_2020$FEC_RIG_PEN,
+            '%Y/%m/%d')),
+            'years'))
+
+Pensionados_31_12_2020<-Pensionados_31_12_2020%>%mutate('Edad'=edad,'T_Pension'=tiempo_pension)
+
+#se crean bases de datos según genero
+afil_hombres <- Afiliados_31_12_2020 %>% filter(SEXO == "M")
+pen_hombres <- Pensionados_31_12_2020 %>% filter(SEX == "M")
+afil_mujeres <- Afiliados_31_12_2020 %>% filter(SEXO == "F")
+pen_mujeres <- Pensionados_31_12_2020 %>% filter(SEX == "F")
+
+```
+
+
+
+
+# Estadistica
+```{r}
+
+```
+
+
+
+# Estocastico
+
+```{r}
+
+```
+
+
+
+
+
+# Deterministico
+
+```{r}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
