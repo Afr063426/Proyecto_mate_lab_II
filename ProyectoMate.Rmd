@@ -142,7 +142,7 @@ pen_mujeres <- Pensionados_31_12_2020 %>% filter(SEX == "F")
 # Deterministico
 
 ```{r}
-
+k<-8+9+6
 ```
 
 
