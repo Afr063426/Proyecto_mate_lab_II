@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-#Programacion hecha por   Ricardo Acuña, Francisco Cambronero, Joshua Cervantes, Moisés Monge y Daniel Sabater
+#Programacion hecha por   Joshua Cervantes, Moisés Monge y Daniel Sabater
 #Se cargan los paquetes
 knitr::opts_chunk$set(echo = FALSE)
 options(scipen = 999)
@@ -26,8 +26,7 @@ library(magrittr) # uso de %<>% con funciones de dplyr
 
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
 Pensionados_31_12_2021 <- read_excel("Compañia_Pensionados_31_12_2021.xlsx")
-# tabla_mortalidad_mujeres <- read_excel("tabla_mortalidad_mujeres.xlsx")
-# tabla_mortalidad_hombres <- read_excel("tabla_mortalidad_hombres.xlsx")
+
 
 # Tablas de decrementos
 
