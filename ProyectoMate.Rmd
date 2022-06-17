@@ -18,7 +18,6 @@ library(kableExtra)
 library(xtable)
 library(stringr)
 library(magrittr) # uso de %<>% con funciones de dplyr
-library(zoo) # fechas en formato mes/año
 #library(xts)
 #library(tinytex)
 
@@ -149,16 +148,16 @@ pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
 ```
 
 
-
-
 # Estadistica
 ```{r}
-
+# Ejemplo esperanza de vida
+Edad <- 30
+exn(ListaDeTablasHombres[[Edad+1]], x = Edad, type = "curtate")
 ```
 
 
 
-# Estocastico
+# Estocástico
 
 ```{r}
 
@@ -171,8 +170,7 @@ pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
 # Deterministico
 
 ```{r}
-A <- 1+2
-k<-8+9+6
+
 ```
 
 
