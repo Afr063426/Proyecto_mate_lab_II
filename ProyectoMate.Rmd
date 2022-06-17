@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-#Programacion hecha por   Joshua Cervantes, Moisés Monge y Daniel Sabater
+#Programacion hecha por   Ricardo Acuña, Francisco Cambronero, Joshua Cervantes, Moisés Monge y Daniel Sabater
 #Se cargan los paquetes
 knitr::opts_chunk$set(echo = FALSE)
 options(scipen = 999)
@@ -18,6 +18,7 @@ library(kableExtra)
 library(xtable)
 library(stringr)
 library(magrittr) # uso de %<>% con funciones de dplyr
+library(zoo) # fechas en formato mes/año
 #library(xts)
 #library(tinytex)
 
@@ -25,8 +26,7 @@ library(magrittr) # uso de %<>% con funciones de dplyr
 #Se cargan las bases de datos
 
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
-Pensionados_31_12_2021 <- read_excel("Compañia_Pensionados_31_12_2021.xlsx")
-
+Pensionados_31_12_2021 <- read_excel("Compañia_Pensionados_31_12_2021.xlsx",  range = "A1:F5006")
 
 # Tablas de decrementos
 
@@ -85,7 +85,7 @@ names(ListaDeTablasMujeres)<-paste("E",seq(0,115), sep = "")
 
 # Se establece la echa de la evaluación
 
-dia_de_evaluacion <- as.Date('31-12-2021', format='%d-%m-%Y')
+dia_de_evaluacion <- as.Date('31/12/2021', format='%d/%m/%Y')
 
 # Afiliados
 
@@ -98,16 +98,18 @@ edad <- floor(time_length(difftime(
 # Depuración de la columna 'Fecha_ingreso' 
 
 Afiliados_31_12_2021 %<>% mutate(Fecha_ingreso = paste(substr(Fecha_ingreso,1,4),
-                    '-',substr(Fecha_ingreso,5,6),'-',substr(Fecha_ingreso,7,8),sep=''))
+                    '/',substr(Fecha_ingreso,5,6),'/',substr(Fecha_ingreso,7,8),sep='')) 
 
+# Depuración de la columna 'Fecha_nacimiento'
 
+Afiliados_31_12_2021 %<>% mutate(Fecha_nacimiento = format(Fecha_nacimiento, '%Y/%m/%d')) 
 
 # Cálculo de antigüedad
 
 antiguedad <- time_length(difftime(
             dia_de_evaluacion,
             as.Date(Afiliados_31_12_2021$Fecha_ingreso,
-            '%Y-%m-%d')), "years")
+            '%Y/%m/%d')), "years")
 
 # Inclusión de las variables de edad y antigüedad en la base de datos
 
@@ -117,28 +119,32 @@ Afiliados_31_12_2021 %<>% mutate('Edad' = edad,'Antiguedad' = antiguedad)
 
 #Se calcula edad de los pensionados
 
-Pensionados_31_12_2020<-Pensionados_31_12_2020%>%mutate(FEC_NAC=paste(substr(FEC_NAC,1,4),
+Pensionados_31_12_2021 %<>% mutate(FEC_NAC=paste(substr(FEC_NAC,1,4),
                     '/',substr(FEC_NAC,5,6),'/',substr(FEC_NAC,7,8),sep=''))
-Pensionados_31_12_2020<-Pensionados_31_12_2020%>%mutate(FEC_RIG_PEN=paste(substr(FEC_RIG_PEN,1,4),
+
+Pensionados_31_12_2021 %<>% mutate(FEC_RIG_PEN=paste(substr(FEC_RIG_PEN,1,4),
                     '/',substr(FEC_RIG_PEN,5,6),'/',substr(FEC_RIG_PEN,7,8),sep=''))
-edad<-floor(time_length(difftime(
+
+edad <- floor(time_length(difftime(
             dia_de_evaluacion,
-            as.Date(Pensionados_31_12_2020$FEC_NAC,
+            as.Date(Pensionados_31_12_2021$FEC_NAC,
             '%Y/%m/%d')),
             'years'))
+
 tiempo_pension<-floor(time_length(difftime(
             dia_de_evaluacion,
-            as.Date(Pensionados_31_12_2020$FEC_RIG_PEN,
+            as.Date(Pensionados_31_12_2021$FEC_RIG_PEN,
             '%Y/%m/%d')),
             'years'))
 
-Pensionados_31_12_2020<-Pensionados_31_12_2020%>%mutate('Edad'=edad,'T_Pension'=tiempo_pension)
+Pensionados_31_12_2021 %<>% mutate('Edad'=edad,'T_Pension'=tiempo_pension)
 
 #se crean bases de datos según genero
-afil_hombres <- Afiliados_31_12_2020 %>% filter(SEXO == "M")
-pen_hombres <- Pensionados_31_12_2020 %>% filter(SEX == "M")
-afil_mujeres <- Afiliados_31_12_2020 %>% filter(SEXO == "F")
-pen_mujeres <- Pensionados_31_12_2020 %>% filter(SEX == "F")
+
+afil_hombres <- Afiliados_31_12_2021 %>% filter(Sexo == "M")
+pen_hombres <- Pensionados_31_12_2021 %>% filter(SEX == "M")
+afil_mujeres <- Afiliados_31_12_2021 %>% filter(Sexo == "F")
+pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
 
 ```
 
