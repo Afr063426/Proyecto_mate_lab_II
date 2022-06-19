@@ -17,31 +17,34 @@ library(readxl)
 library(kableExtra)
 library(xtable)
 library(stringr)
+library(magrittr) # uso de %<>% con funciones de dplyr
 #library(xts)
 #library(tinytex)
 
 
 #Se cargan las bases de datos
 
-Afiliados_31_12_2020 <- read_excel("Afiliados_31_12_2020.xlsx")
-Pensionados_31_12_2020 <- read_excel("Pensionados_31_12_2020.xlsx")
-tabla_mortalidad_mujeres<-read_excel("tabla_mortalidad_mujeres.xlsx")
-tabla_mortalidad_hombres<-read_excel("tabla_mortalidad_hombres.xlsx")
+Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
+Pensionados_31_12_2021 <- read_excel("Compañia_Pensionados_31_12_2021.xlsx",  range = "A1:F5006")
 
 
+# Tablas de decrementos
+
+TablasDecrementosHombres <- read_excel("Tablas de decrementos.xlsx", 
+    sheet = "Hombres")
+TablasDecrementosMujeres <- read_excel("Tablas de decrementos.xlsx", 
+    sheet = "Mujeres")
+
+# Tablas de mortalidad dinámicas
 
 TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xls", 
     sheet = "Hombres"))
 TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xls", 
     sheet = "Mujeres"))
 
-
-
 #Se genera lista con las tablas actuariales de los hombres
 
 ListaDeTablasHombres <- list()
-
-
 for (j in 1:(length(TablaDinamica_lxsHombres)-1)){
     
     ListaDeTablasHombres[[j]] <- with(TablaDinamica_lxsHombres,
@@ -53,9 +56,7 @@ for (j in 1:(length(TablaDinamica_lxsHombres)-1)){
                          name = paste("E",(j-1), sep = "")
                        ))
 }
-
 names(ListaDeTablasHombres)<-paste("E",seq(0,115), sep = "")
-
 
 #Se genera lista con las tablas actuariales de las mujeres
 
@@ -72,63 +73,80 @@ for (j in 1:(length(TablaDinamica_lxsMujeres)-1)){
 }
 names(ListaDeTablasMujeres)<-paste("E",seq(0,115), sep = "")
 
-#Se elimina las tablas lm
+# Se establece la echa de la evaluación
 
-#rm(TablaDinamica_lxsMujeres,TablaDinamica_lxsHombres )
+dia_de_evaluacion <- as.Date('31/12/2021', format='%d/%m/%Y')
 
-#Se calcula la edad cumplida de la personas
-dia_de_evaluacion<-as.Date('31/12/2020',format='%d/%m/%Y')
+# Afiliados
 
-edad<-floor(time_length(difftime(
-    dia_de_evaluacion,
-    as.Date(as.POSIXct(Afiliados_31_12_2020$FEC_NACIMIENTO),'UTC')),'years'))
+# Cálculo de edades afiliados
 
-Afiliados_31_12_2020<-Afiliados_31_12_2020%>%mutate(FEC_INGRESO=paste(substr(FEC_INGRESO,1,4),
-                    '/',substr(FEC_INGRESO,5,6),'/',substr(FEC_INGRESO,7,8),sep=''))
+edad <- floor(time_length(difftime(
+  dia_de_evaluacion,
+    as.Date(as.POSIXct(Afiliados_31_12_2021$Fecha_nacimiento),'UTC')),'years'))
 
-antiguedad<-time_length(difftime(
+# Depuración de la columna 'Fecha_ingreso' 
+
+Afiliados_31_12_2021 %<>% mutate(Fecha_ingreso = paste(substr(Fecha_ingreso,1,4),
+                    '/',substr(Fecha_ingreso,5,6),'/',substr(Fecha_ingreso,7,8),sep='')) 
+
+# Depuración de la columna 'Fecha_nacimiento'
+
+Afiliados_31_12_2021 %<>% mutate(Fecha_nacimiento = format(Fecha_nacimiento, '%Y/%m/%d')) 
+
+# Cálculo de antigüedad
+
+antiguedad <- time_length(difftime(
             dia_de_evaluacion,
-            as.Date(Afiliados_31_12_2020$FEC_INGRESO,
-            '%Y/%m/%d')),
-            'years')
-Afiliados_31_12_2020<-Afiliados_31_12_2020%>%mutate('Edad'=edad,'Antiguedad'=antiguedad)
+            as.Date(Afiliados_31_12_2021$Fecha_ingreso,
+            '%Y/%m/%d')), "years")
+
+# Inclusión de las variables de edad y antigüedad en la base de datos
+
+Afiliados_31_12_2021 %<>% mutate('Edad' = edad,'Antiguedad' = antiguedad)
+
 #Se calcula edad de los pensionados
-Pensionados_31_12_2020<-Pensionados_31_12_2020%>%mutate(FEC_NAC=paste(substr(FEC_NAC,1,4),
+
+Pensionados_31_12_2021 %<>% mutate(FEC_NAC=paste(substr(FEC_NAC,1,4),
                     '/',substr(FEC_NAC,5,6),'/',substr(FEC_NAC,7,8),sep=''))
-Pensionados_31_12_2020<-Pensionados_31_12_2020%>%mutate(FEC_RIG_PEN=paste(substr(FEC_RIG_PEN,1,4),
+
+Pensionados_31_12_2021 %<>% mutate(FEC_RIG_PEN=paste(substr(FEC_RIG_PEN,1,4),
                     '/',substr(FEC_RIG_PEN,5,6),'/',substr(FEC_RIG_PEN,7,8),sep=''))
-edad<-floor(time_length(difftime(
+
+edad <- floor(time_length(difftime(
             dia_de_evaluacion,
-            as.Date(Pensionados_31_12_2020$FEC_NAC,
+            as.Date(Pensionados_31_12_2021$FEC_NAC,
             '%Y/%m/%d')),
             'years'))
+
 tiempo_pension<-floor(time_length(difftime(
             dia_de_evaluacion,
-            as.Date(Pensionados_31_12_2020$FEC_RIG_PEN,
+            as.Date(Pensionados_31_12_2021$FEC_RIG_PEN,
             '%Y/%m/%d')),
             'years'))
 
-Pensionados_31_12_2020<-Pensionados_31_12_2020%>%mutate('Edad'=edad,'T_Pension'=tiempo_pension)
+Pensionados_31_12_2021 %<>% mutate('Edad'=edad,'T_Pension'=tiempo_pension)
 
 #se crean bases de datos según genero
-afil_hombres <- Afiliados_31_12_2020 %>% filter(SEXO == "M")
-pen_hombres <- Pensionados_31_12_2020 %>% filter(SEX == "M")
-afil_mujeres <- Afiliados_31_12_2020 %>% filter(SEXO == "F")
-pen_mujeres <- Pensionados_31_12_2020 %>% filter(SEX == "F")
+
+afil_hombres <- Afiliados_31_12_2021 %>% filter(Sexo == "M")
+pen_hombres <- Pensionados_31_12_2021 %>% filter(SEX == "M")
+afil_mujeres <- Afiliados_31_12_2021 %>% filter(Sexo == "F")
+pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
 
 ```
-
-
 
 
 # Estadistica
 ```{r}
-
+# Ejemplo esperanza de vida
+Edad <- 30
+exn(ListaDeTablasHombres[[Edad+1]], x = Edad, type = "curtate")
 ```
 
 
 
-# Estocastico
+# Estocástico
 
 ```{r}
 
@@ -141,8 +159,10 @@ pen_mujeres <- Pensionados_31_12_2020 %>% filter(SEX == "F")
 # Deterministico
 
 ```{r}
-A <- 1+2
-k<-8+9+6
+
+
+
+
 ```
 
 
