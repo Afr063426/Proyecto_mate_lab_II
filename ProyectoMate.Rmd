@@ -27,11 +27,12 @@ library(magrittr) # uso de %<>% con funciones de dplyr
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
 Pensionados_31_12_2021 <- read_excel("Compañia_Pensionados_31_12_2021.xlsx",  range = "A1:F5006")
 
+
 # Tablas de decrementos
 
-tabla_decrementos_hombres <- read_excel("Tablas de decrementos.xlsx", 
+TablasDecrementosHombres <- read_excel("Tablas de decrementos.xlsx", 
     sheet = "Hombres")
-tabla_decrementos_mujeres <- read_excel("Tablas de decrementos.xlsx", 
+TablasDecrementosMujeres <- read_excel("Tablas de decrementos.xlsx", 
     sheet = "Mujeres")
 
 # Tablas de mortalidad dinámicas
@@ -44,8 +45,6 @@ TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xls",
 #Se genera lista con las tablas actuariales de los hombres
 
 ListaDeTablasHombres <- list()
-
-
 for (j in 1:(length(TablaDinamica_lxsHombres)-1)){
     
     ListaDeTablasHombres[[j]] <- with(TablaDinamica_lxsHombres,
@@ -57,14 +56,11 @@ for (j in 1:(length(TablaDinamica_lxsHombres)-1)){
                          name = paste("E",(j-1), sep = "")
                        ))
 }
-
 names(ListaDeTablasHombres)<-paste("E",seq(0,115), sep = "")
-
 
 #Se genera lista con las tablas actuariales de las mujeres
 
 ListaDeTablasMujeres <- list()
-
 for (j in 1:(length(TablaDinamica_lxsMujeres)-1)){
     
     ListaDeTablasMujeres[[j]] <- with(TablaDinamica_lxsMujeres,
@@ -77,10 +73,6 @@ for (j in 1:(length(TablaDinamica_lxsMujeres)-1)){
                        ))
 }
 names(ListaDeTablasMujeres)<-paste("E",seq(0,115), sep = "")
-
-#Se elimina las tablas lm
-
-#rm(TablaDinamica_lxsMujeres,TablaDinamica_lxsHombres )
 
 # Se establece la echa de la evaluación
 
@@ -113,8 +105,6 @@ antiguedad <- time_length(difftime(
 # Inclusión de las variables de edad y antigüedad en la base de datos
 
 Afiliados_31_12_2021 %<>% mutate('Edad' = edad,'Antiguedad' = antiguedad)
-
-
 
 #Se calcula edad de los pensionados
 
@@ -170,6 +160,9 @@ exn(ListaDeTablasHombres[[Edad+1]], x = Edad, type = "curtate")
 # Deterministico
 
 ```{r}
+
+
+
 
 ```
 
