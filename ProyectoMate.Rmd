@@ -61,7 +61,6 @@ names(ListaDeTablasHombres)<-paste("E",seq(0,115), sep = "")
 
 ListaDeTablasMujeres <- list()
 for (j in 1:(length(TablaDinamica_lxsMujeres)-1)){
-    
     ListaDeTablasMujeres[[j]] <- with(TablaDinamica_lxsMujeres,
                        new(
                          "actuarialtable",
