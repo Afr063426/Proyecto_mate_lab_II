@@ -176,12 +176,64 @@ exn(ListaDeTablasHombres[[Edad + 1]], x = Edad, type = "curtate")
 
 ```{r}
 
+
+# Funcion para pensiones herededas
+pension_heredada <- function(edad, monto, activo, tasa_descuento, m, inflacion, v) {
+  Edad <- edad
+  suma <- 0
+  simulacion <- simulaciones
+  ajuste <- 1
+  j <- 1 / m
+  i <- 1
+  # Se verifica que la persona no haya tenido el beneficio mas de 10 anhos
+  if (activo < 10) {
+    tiempo_restante <- c(0:activo - 1)
+    v_n <- v^(tiempo_restante) # Para traer en cada anhos
+    a_m <- (1 + tasa_descuento)^(1 / m) * (1 - v) / (m * ((1 + tasa_descuento)^(1 / m) - 1)) * v_n
+    suma <- suma + simulaciones * sum(a_m)
+    if (sex) {
+      probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 10 - activo)
+    } else {
+      probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 10 - activo)
+    }
+    vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
+    simulacion <- vivos
+    edad <- edad + 10 - activo
+    suma <- suma + v^j * ajuste * vivos
+    ajuste <- ajuste * (1 + inflacion)^(10 - activo)
+    j <- 10
+  }
+  while (simulacion > 0) {
+    if (sex) {
+      probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 1 / m)
+    } else {
+      probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 1 / m)
+    }
+    vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
+    simulacion <- vivos
+    edad <- edad + 1 / m
+    suma <- suma + v^j * ajuste * vivos
+    ajuste <- ajuste * (1 + inflacion)^(i == 12)
+    j <- j + 1 / m
+    i <- (1 + i) * (i < 12) + 1 * (i == 12)
+  }
+  return(monto * suma / simulaciones)
+}
+
+pension_propia <- function(edad, monto, t_descuento, m, simulaciones, v, inflacion) {
+  Edad <- edad
+  suma <- 0
+  simulacion <- simulaciones
+  ajuste <- Afiliados_31_12_2021
+}
+
 pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
   v <- 1 / (1 + t_descuento)
   edades <- base_de_datos$Edad
+  tiempo_activo <- base_de_datos$T_Pension
   antiguedades <- 0
   montos <- base_de_datos$MON_PENSION
-  fn2 <- function(edad, monto, anti) {
+  fn2 <- function(edad, monto, activo) {
     Edad <- edad
     suma <- 0
     simulacion <- simulaciones
