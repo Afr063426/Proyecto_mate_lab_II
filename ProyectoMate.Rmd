@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-# Programacion hecha por   Ricardo Acuña, Francisco Cambronero, Joshua Cervantes, Moisés Monge y Daniel Sabater
+# Programacion hecha por Joshua Cervantes, Moisés Monge y Daniel Sabater
 # Se cargan los paquetes
 knitr::opts_chunk$set(echo = FALSE)
 options(scipen = 999)
@@ -17,7 +17,7 @@ library(readxl)
 library(kableExtra)
 library(xtable)
 library(stringr)
-# library(magrittr) # uso de %<>% con funciones de dplyr
+library(magrittr) # uso de %<>% con funciones de dplyr
 # library(xts)
 # library(tinytex)
 
@@ -265,17 +265,53 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 
 
 
-
-
 # Deterministico
+# Funciones que nos sirven a ambos
+
+
+```{r}
+#porcentaje de pensión
+porcentaje_de_pension <- function(antiguedad) {
+  porcebtajeVejez<-c( (antiguedad >= 5  & antiguedad < 10) * 0.10 +
+                      (antiguedad >= 10 & antiguedad < 15) * 0.15 +
+                      (antiguedad >= 15 & antiguedad < 20) * 0.20 +
+                      (antiguedad >= 20 & antiguedad < 25) * 0.25 +
+                      (antiguedad >= 30 & antiguedad < 35) * 0.30 +
+                      (antiguedad >= 35 & antiguedad < 40) * 0.35 +
+                      (antiguedad >= 40) * 0.4
+                    )
+  return(porcebtajeVejez)
+}
+
+
+RebajoFondosInsuficientes <- function(MontodePension) {
+  MontoRebajado<-c( 
+     MontodePension*0.10+
+    (MontodePension >= 2293400 ) * 0.35 * MontodePension+
+    (MontodePension >= 2866750 ) * 0.45 * MontodePension+
+    (MontodePension >= 3583437.50) * 0.55 * MontodePension+
+    (MontodePension >= 4479296.88) * 0.65 *MontodePension
+  )
+  if (MontoRebajado>MontodePension*0.55) {
+    return(MontodePension*0.55)
+  }
+  return(MontoRebajado)
+}
+```
+
+## Personal activo
+
 
 ```{r}
 
 ```
 
 
+## Personas ya pensionadas
+```{r}
 
 
+```
 
 
 
