@@ -34,6 +34,11 @@ tabla_decrementos_hombres <- read_excel("Tablas de decrementos.xlsx",
 tabla_decrementos_mujeres <- read_excel("Tablas de decrementos.xlsx", 
     sheet = "Mujeres")
 
+# Tabla de múltiples decrementos para usar con lifecontingencies
+
+TablaMDHombres <- new("mdt", table=tabla_decrementos_hombres)
+TablaMDMujeres <- new("mdt", table=tabla_decrementos_mujeres)
+
 # Tablas de mortalidad dinámicas
 
 TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xls", 
@@ -149,6 +154,7 @@ pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
 
 
 # Estadistica
+
 ```{r}
 # Ejemplo esperanza de vida
 Edad <- 30
@@ -160,7 +166,8 @@ exn(ListaDeTablasHombres[[Edad+1]], x = Edad, type = "curtate")
 # Estocástico
 
 ```{r}
-
+rLife(n = 50, object = ListaDeTablasMujeres[[60+1]], x = 60,type = "Kx")
+rmdt(n = 1, object = TablaMDHombres, )
 ```
 
 
