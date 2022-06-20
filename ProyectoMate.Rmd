@@ -6,8 +6,8 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-#Programacion hecha por   Ricardo Acuña, Francisco Cambronero, Joshua Cervantes, Moisés Monge y Daniel Sabater
-#Se cargan los paquetes
+# Programacion hecha por Joshua Cervantes, Moisés Monge y Daniel Sabater
+# Se cargan los paquetes
 knitr::opts_chunk$set(echo = FALSE)
 options(scipen = 999)
 library(lifecontingencies)
@@ -17,66 +17,72 @@ library(readxl)
 library(kableExtra)
 library(xtable)
 library(stringr)
-library(magrittr) # uso de %<>% con funciones de dplyr
-#library(xts)
-#library(tinytex)
+# library(magrittr) # uso de %<>% con funciones de dplyr
+# library(xts)
+# library(tinytex)
 
 
-#Se cargan las bases de datos
+# Se cargan las bases de datos
 
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
-Pensionados_31_12_2021 <- read_excel("Compañia_Pensionados_31_12_2021.xlsx",  range = "A1:F5006")
+Pensionados_31_12_2021 <- read_excel("Compañia_Pensionados_31_12_2021.xlsx", range = "A1:F5006")
 
 
 # Tablas de decrementos
 
-TablasDecrementosHombres <- read_excel("Tablas de decrementos.xlsx", 
-    sheet = "Hombres")
-TablasDecrementosMujeres <- read_excel("Tablas de decrementos.xlsx", 
-    sheet = "Mujeres")
+TablasDecrementosHombres <- read_excel("Tablas de decrementos.xlsx",
+  sheet = "Hombres"
+)
+TablasDecrementosMujeres <- read_excel("Tablas de decrementos.xlsx",
+  sheet = "Mujeres"
+)
 
 # Tablas de mortalidad dinámicas
 
-TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xls", 
-    sheet = "Hombres"))
-TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xls", 
-    sheet = "Mujeres"))
+TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xls",
+  sheet = "Hombres"
+))
+TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xls",
+  sheet = "Mujeres"
+))
 
-#Se genera lista con las tablas actuariales de los hombres
+# Se genera lista con las tablas actuariales de los hombres
 
 ListaDeTablasHombres <- list()
-for (j in 1:(length(TablaDinamica_lxsHombres)-1)){
-    
-    ListaDeTablasHombres[[j]] <- with(TablaDinamica_lxsHombres,
-                       new(
-                         "actuarialtable",
-                         interest = 0.06,
-                         x = TablaDinamica_lxsHombres[,1],
-                         lx = TablaDinamica_lxsHombres[,j+1] ,
-                         name = paste("E",(j-1), sep = "")
-                       ))
+for (j in 1:(length(TablaDinamica_lxsHombres) - 1)) {
+  ListaDeTablasHombres[[j]] <- with(
+    TablaDinamica_lxsHombres,
+    new(
+      "actuarialtable",
+      interest = 0.06,
+      x = TablaDinamica_lxsHombres[, 1],
+      lx = TablaDinamica_lxsHombres[, j + 1],
+      name = paste("E", (j - 1), sep = "")
+    )
+  )
 }
-names(ListaDeTablasHombres)<-paste("E",seq(0,115), sep = "")
+names(ListaDeTablasHombres) <- paste("E", seq(0, 115), sep = "")
 
-#Se genera lista con las tablas actuariales de las mujeres
+# Se genera lista con las tablas actuariales de las mujeres
 
 ListaDeTablasMujeres <- list()
-for (j in 1:(length(TablaDinamica_lxsMujeres)-1)){
-    
-    ListaDeTablasMujeres[[j]] <- with(TablaDinamica_lxsMujeres,
-                       new(
-                         "actuarialtable",
-                         interest = 0.06,
-                         x = TablaDinamica_lxsMujeres[,1],
-                         lx = TablaDinamica_lxsMujeres[,j+1] ,
-                         name = paste("E",(j-1), sep = "")
-                       ))
+for (j in 1:(length(TablaDinamica_lxsMujeres) - 1)) {
+  ListaDeTablasMujeres[[j]] <- with(
+    TablaDinamica_lxsMujeres,
+    new(
+      "actuarialtable",
+      interest = 0.06,
+      x = TablaDinamica_lxsMujeres[, 1],
+      lx = TablaDinamica_lxsMujeres[, j + 1],
+      name = paste("E", (j - 1), sep = "")
+    )
+  )
 }
-names(ListaDeTablasMujeres)<-paste("E",seq(0,115), sep = "")
+names(ListaDeTablasMujeres) <- paste("E", seq(0, 115), sep = "")
 
 # Se establece la echa de la evaluación
 
-dia_de_evaluacion <- as.Date('31/12/2021', format='%d/%m/%Y')
+dia_de_evaluacion <- as.Date("31/12/2021", format = "%d/%m/%Y")
 
 # Afiliados
 
@@ -84,57 +90,76 @@ dia_de_evaluacion <- as.Date('31/12/2021', format='%d/%m/%Y')
 
 edad <- floor(time_length(difftime(
   dia_de_evaluacion,
-    as.Date(as.POSIXct(Afiliados_31_12_2021$Fecha_nacimiento),'UTC')),'years'))
+  as.Date(as.POSIXct(Afiliados_31_12_2021$Fecha_nacimiento), "UTC")
+), "years"))
 
-# Depuración de la columna 'Fecha_ingreso' 
+# Depuración de la columna 'Fecha_ingreso'
 
-Afiliados_31_12_2021 %<>% mutate(Fecha_ingreso = paste(substr(Fecha_ingreso,1,4),
-                    '/',substr(Fecha_ingreso,5,6),'/',substr(Fecha_ingreso,7,8),sep='')) 
+Afiliados_31_12_2021 %<>% mutate(Fecha_ingreso = paste(substr(Fecha_ingreso, 1, 4),
+  "/", substr(Fecha_ingreso, 5, 6), "/", substr(Fecha_ingreso, 7, 8),
+  sep = ""
+))
 
 # Depuración de la columna 'Fecha_nacimiento'
 
-Afiliados_31_12_2021 %<>% mutate(Fecha_nacimiento = format(Fecha_nacimiento, '%Y/%m/%d')) 
+Afiliados_31_12_2021 %<>% mutate(Fecha_nacimiento = format(Fecha_nacimiento, "%Y/%m/%d"))
 
 # Cálculo de antigüedad
 
 antiguedad <- time_length(difftime(
-            dia_de_evaluacion,
-            as.Date(Afiliados_31_12_2021$Fecha_ingreso,
-            '%Y/%m/%d')), "years")
+  dia_de_evaluacion,
+  as.Date(
+    Afiliados_31_12_2021$Fecha_ingreso,
+    "%Y/%m/%d"
+  )
+), "years")
 
 # Inclusión de las variables de edad y antigüedad en la base de datos
 
-Afiliados_31_12_2021 %<>% mutate('Edad' = edad,'Antiguedad' = antiguedad)
+Afiliados_31_12_2021 %<>% mutate("Edad" = edad, "Antiguedad" = antiguedad)
 
-#Se calcula edad de los pensionados
+# Se calcula edad de los pensionados
 
-Pensionados_31_12_2021 %<>% mutate(FEC_NAC=paste(substr(FEC_NAC,1,4),
-                    '/',substr(FEC_NAC,5,6),'/',substr(FEC_NAC,7,8),sep=''))
+Pensionados_31_12_2021 %<>% mutate(FEC_NAC = paste(substr(FEC_NAC, 1, 4),
+  "/", substr(FEC_NAC, 5, 6), "/", substr(FEC_NAC, 7, 8),
+  sep = ""
+))
 
-Pensionados_31_12_2021 %<>% mutate(FEC_RIG_PEN=paste(substr(FEC_RIG_PEN,1,4),
-                    '/',substr(FEC_RIG_PEN,5,6),'/',substr(FEC_RIG_PEN,7,8),sep=''))
+Pensionados_31_12_2021 %<>% mutate(FEC_RIG_PEN = paste(substr(FEC_RIG_PEN, 1, 4),
+  "/", substr(FEC_RIG_PEN, 5, 6), "/", substr(FEC_RIG_PEN, 7, 8),
+  sep = ""
+))
 
-edad <- floor(time_length(difftime(
-            dia_de_evaluacion,
-            as.Date(Pensionados_31_12_2021$FEC_NAC,
-            '%Y/%m/%d')),
-            'years'))
+edad <- floor(time_length(
+  difftime(
+    dia_de_evaluacion,
+    as.Date(
+      Pensionados_31_12_2021$FEC_NAC,
+      "%Y/%m/%d"
+    )
+  ),
+  "years"
+))
 
-tiempo_pension<-floor(time_length(difftime(
-            dia_de_evaluacion,
-            as.Date(Pensionados_31_12_2021$FEC_RIG_PEN,
-            '%Y/%m/%d')),
-            'years'))
+tiempo_pension <- floor(time_length(
+  difftime(
+    dia_de_evaluacion,
+    as.Date(
+      Pensionados_31_12_2021$FEC_RIG_PEN,
+      "%Y/%m/%d"
+    )
+  ),
+  "years"
+))
 
-Pensionados_31_12_2021 %<>% mutate('Edad'=edad,'T_Pension'=tiempo_pension)
+Pensionados_31_12_2021 %<>% mutate("Edad" = edad, "T_Pension" = tiempo_pension)
 
-#se crean bases de datos según genero
+# se crean bases de datos según genero
 
 afil_hombres <- Afiliados_31_12_2021 %>% filter(Sexo == "M")
 pen_hombres <- Pensionados_31_12_2021 %>% filter(SEX == "M")
 afil_mujeres <- Afiliados_31_12_2021 %>% filter(Sexo == "F")
 pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
-
 ```
 
 
@@ -142,7 +167,7 @@ pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
 ```{r}
 # Ejemplo esperanza de vida
 Edad <- 30
-exn(ListaDeTablasHombres[[Edad+1]], x = Edad, type = "curtate")
+exn(ListaDeTablasHombres[[Edad + 1]], x = Edad, type = "curtate")
 ```
 
 
@@ -151,19 +176,97 @@ exn(ListaDeTablasHombres[[Edad+1]], x = Edad, type = "curtate")
 
 ```{r}
 
+
+# Funcion para pensiones herededas
+pension_heredada <- function(edad, monto, activo, tasa_descuento, m, inflacion, v) {
+  Edad <- edad
+  suma <- 0
+  simulacion <- simulaciones
+  ajuste <- 1
+  j <- 1 / m
+  i <- 1
+  # Se verifica que la persona no haya tenido el beneficio mas de 10 anhos
+  if (activo < 10) {
+    tiempo_restante <- c(0:activo - 1)
+    v_n <- v^(tiempo_restante) # Para traer en cada anhos
+    a_m <- (1 + tasa_descuento)^(1 / m) * (1 - v) / (m * ((1 + tasa_descuento)^(1 / m) - 1)) * v_n
+    suma <- suma + simulaciones * sum(a_m)
+    if (sex) {
+      probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 10 - activo)
+    } else {
+      probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 10 - activo)
+    }
+    vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
+    simulacion <- vivos
+    edad <- edad + 10 - activo
+    suma <- suma + v^j * ajuste * vivos
+    ajuste <- ajuste * (1 + inflacion)^(10 - activo)
+    j <- 10
+  }
+  while (simulacion > 0) {
+    if (sex) {
+      probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 1 / m)
+    } else {
+      probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 1 / m)
+    }
+    vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
+    simulacion <- vivos
+    edad <- edad + 1 / m
+    suma <- suma + v^j * ajuste * vivos
+    ajuste <- ajuste * (1 + inflacion)^(i == 12)
+    j <- j + 1 / m
+    i <- (1 + i) * (i < 12) + 1 * (i == 12)
+  }
+  return(monto * suma / simulaciones)
+}
+
+pension_propia <- function(edad, monto, t_descuento, m, simulaciones, v, inflacion) {
+  Edad <- edad
+  suma <- 0
+  simulacion <- simulaciones
+  ajuste <- Afiliados_31_12_2021
+}
+
+pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
+  v <- 1 / (1 + t_descuento)
+  edades <- base_de_datos$Edad
+  tiempo_activo <- base_de_datos$T_Pension
+  antiguedades <- 0
+  montos <- base_de_datos$MON_PENSION
+  fn2 <- function(edad, monto, activo) {
+    Edad <- edad
+    suma <- 0
+    simulacion <- simulaciones
+    # monto<-monto*(v*aumento)^(max(jubilacion-Edad,0)) en este caso si se descomenta se calcula para los ya pensionados
+    # monto<-monto
+    ajuste <- 1
+    j <- 1 / m
+    i <- 1
+    while (simulacion > 0) {
+      if (sex) {
+        probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 1 / m)
+      } else {
+        probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 1 / m)
+      }
+      vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
+      simulacion <- vivos
+      edad <- edad + 1 / m
+      suma <- suma + v^j * ajuste * vivos
+      ajuste <- ajuste * (1 + inflacion)^(i == 12)
+      j <- j + 1 / m
+      i <- (1 + i) * (i < 12) + 1 * (i == 12)
+    }
+    return(monto * suma / simulaciones)
+  }
+  valores <- mapply(FUN = fn2, edad = edades, monto = montos, anti = antiguedades)
+  return(sum(valores))
+}
 ```
 
 
 
-
-
 # Deterministico
-
-
-
 # Funciones que nos sirven a ambos
-
-
 
 
 ```{r}
@@ -180,6 +283,7 @@ porcentaje_de_pension <- function(antiguedad) {
   return(porcebtajeVejez)
 }
 
+
 RebajoFondosInsuficientes <- function(MontodePension) {
   MontoRebajado<-c( 
      MontodePension*0.10+
@@ -189,13 +293,14 @@ RebajoFondosInsuficientes <- function(MontodePension) {
     (MontodePension >= 4479296.88) * 0.65 *MontodePension
   )
   if (MontoRebajado>MontodePension*0.55) {
-    return(MontoRebajado*0.55)
+    return(MontodePension*0.55)
   }
   return(MontoRebajado)
 }
 ```
 
 ## Personal activo
+
 
 ```{r}
 
