@@ -17,7 +17,7 @@ library(readxl)
 library(kableExtra)
 library(xtable)
 library(stringr)
-# library(magrittr) # uso de %<>% con funciones de dplyr
+library(magrittr) # uso de %<>% con funciones de dplyr
 # library(xts)
 # library(tinytex)
 
