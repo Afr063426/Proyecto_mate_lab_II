@@ -21,7 +21,6 @@ library(magrittr) # uso de %<>% con funciones de dplyr
 # library(xts)
 # library(tinytex)
 
-
 # Se cargan las bases de datos
 
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
@@ -66,6 +65,7 @@ for (j in 1:(length(TablaDinamica_lxsHombres) - 1)) {
     )
   )
 }
+
 names(ListaDeTablasHombres) <- paste("E", seq(0, 115), sep = "")
 
 # Se genera lista con las tablas actuariales de las mujeres
@@ -83,6 +83,7 @@ for (j in 1:(length(TablaDinamica_lxsMujeres) - 1)) {
     )
   )
 }
+
 names(ListaDeTablasMujeres) <- paste("E", seq(0, 115), sep = "")
 
 # Se establece la echa de la evaluación
@@ -111,13 +112,13 @@ Afiliados_31_12_2021 %<>% mutate(Fecha_nacimiento = format(Fecha_nacimiento, "%Y
 
 # Cálculo de antigüedad
 
-antiguedad <- time_length(difftime(
+antiguedad <- floor(time_length(difftime(
   dia_de_evaluacion,
   as.Date(
     Afiliados_31_12_2021$Fecha_ingreso,
     "%Y/%m/%d"
   )
-), "years")
+), "years"))
 
 # Inclusión de las variables de edad y antigüedad en la base de datos
 
@@ -167,6 +168,195 @@ afil_mujeres <- Afiliados_31_12_2021 %>% filter(Sexo == "F")
 pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
 ```
 
+## Tablas de multiples decrementos
+
+
+```{r}
+
+ProMuerte <- function(q1, q2, q3, q4) {
+  a <- q1 * ((-3 * q2 * q3 * q4) / 12 + 4 * (q2 * q3 + q3 * q4 + q4 * q2) / 12 - 6 * (q2 + q3 + q4) / 12 + 1)
+  b <- q2 * ((-3 * q1 * q3 * q4) / 12 + 4 * (q1 * q3 + q3 * q4 + q4 * q1) / 12 - 6 * (q1 + q3 + q4) / 12 + 1)
+  c <- q3 * ((-3 * q2 * q1 * q4) / 12 + 4 * (q2 * q1 + q1 * q4 + q4 * q2) / 12 - 6 * (q2 + q1 + q4) / 12 + 1)
+  d <- q4 * ((-3 * q2 * q3 * q1) / 12 + 4 * (q2 * q3 + q3 * q1 + q1 * q2) / 12 - 6 * (q2 + q3 + q1) / 12 + 1)
+  qx <- (a + b + c + d)
+
+  return(data.frame("qx1" = a, "qx2" = b, "qx3" = c, "qx4" = d, "qxC" = qx))
+}
+
+# Se genera lista con las tablas de multiples decrementos de los hombres
+
+MDListaDeTablasHombres <- list()
+for (m in 1:116) {
+  qxs <- ProMuerte(TablasDecrementosHombres$Invalidez, TablasDecrementosHombres$Jubilacion, TablasDecrementosHombres$Retiro, qxt(ListaDeTablasHombres[[m]], 0, c(1:116)))
+
+  Tabladevida <- as.data.frame(qxs)
+
+  Tabladevida$lx <- (1000000:(1000000 - 115))
+
+  for (i in 1:115) {
+    Tabladevida$lx[i + 1] <- Tabladevida$lx[i] - Tabladevida$lx[i] * Tabladevida$qxC[i]
+  }
+
+  Tabladevida$d1 <- Tabladevida$lx * Tabladevida$qx1
+  Tabladevida$d2 <- Tabladevida$lx * Tabladevida$qx2
+  Tabladevida$d3 <- Tabladevida$lx * Tabladevida$qx3
+  Tabladevida$d4 <- Tabladevida$lx * Tabladevida$qx4
+
+  Tabladevida$d4[1] + Tabladevida$lx[2]
+
+  MDListaDeTablasHombres[[m]] <-
+    new(
+      "mdt",
+      table = Tabladevida[, 7:10],
+      name = paste("E", (m - 1), sep = "")
+    )
+}
+
+names(MDListaDeTablasHombres) <- paste("E", seq(0, 115), sep = "")
+
+
+
+# Se genera lista con las tablas de multiples decrementos de las mujeres
+
+MDListaDeTablasMujeres <- list()
+for (m in 1:116) {
+  qxs <- ProMuerte(TablasDecrementosMujeres$Invalidez, TablasDecrementosMujeres$Jubilacion, TablasDecrementosMujeres$Retiro, qxt(ListaDeTablasMujeres[[m]], 0, c(1:116)))
+
+  Tabladevida <- as.data.frame(qxs)
+
+  Tabladevida$lx <- (1000000:(1000000 - 115))
+
+  for (i in 1:115) {
+    Tabladevida$lx[i + 1] <- Tabladevida$lx[i] - Tabladevida$lx[i] * Tabladevida$qxC[i]
+  }
+
+  Tabladevida$d1 <- Tabladevida$lx * Tabladevida$qx1
+  Tabladevida$d2 <- Tabladevida$lx * Tabladevida$qx2
+  Tabladevida$d3 <- Tabladevida$lx * Tabladevida$qx3
+  Tabladevida$d4 <- Tabladevida$lx * Tabladevida$qx4
+
+  Tabladevida$d4[1] + Tabladevida$lx[2]
+
+  MDListaDeTablasMujeres[[m]] <-
+    new(
+      "mdt",
+      table = Tabladevida[, 7:10],
+      name = paste("E", (m - 1), sep = "")
+    )
+}
+
+names(MDListaDeTablasMujeres) <- paste("E", seq(0, 115), sep = "")
+
+rm(qxs)
+```
+
+
+
+
+## Escala salarial
+
+```{r}
+# Aqui voy a programar la tabla de escala salarial
+# se debe hacer por sexo y por edad
+# de momentos se calculará el promedio por edad
+# Se estima una función lineal entre los dos puntos que faltan
+# Pensando si hacerlo por splines
+media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Edad), FUN = mean)
+media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Edad), FUN = mean)
+j <- 2
+while (j <= nrow(media_mujeres)) {
+  diferencia <- media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1]
+  if (diferencia != 1) {
+    m <- (media_mujeres$x[j] - media_mujeres$x[j - 1]) /
+      (media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1])
+    b <- media_mujeres$x[j] - m * media_mujeres$Group.1[j]
+    edad_faltantes <- media_mujeres$Group.1[j - 1] + (1:(diferencia - 1))
+    montos <- m * edad_faltantes + b
+    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
+    media_mujeres <- rbind(media_mujeres[1:j - 1, ], faltantes, media_mujeres[j:nrow(media_mujeres), ])
+  }
+  j <- j + 1
+}
+j <- 2
+while (j <= nrow(media_hombres)) {
+  diferencia <- media_hombres$Group.1[j] - media_hombres$Group.1[j - 1]
+  if (diferencia != 1) {
+    m <- (media_hombres$x[j] - media_hombres$x[j - 1]) /
+      (media_hombres$Group.1[j] - media_hombres$Group.1[j - 1])
+    b <- media_hombres$x[j] - m * media_hombres$Group.1[j]
+    edad_faltantes <- media_hombres$Group.1[j - 1] + (1:(diferencia - 1))
+    montos <- m * edad_faltantes + b
+    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
+    media_hombres <- rbind(media_hombres[1:j - 1, ], faltantes, media_hombres[j:nrow(media_hombres), ])
+  }
+  j <- j + 1
+}
+# Mujeres
+edad_m <- max(media_mujeres$Group.1)
+sal_m <- rep(max(media_mujeres$x), 85 - edad_m)
+sal_m <- data.frame(Group.1 = c((edad_m + 1):85, 18), x = c(sal_m, media_mujeres$x[1]))
+media_mujeres %<>% rbind(sal_m)
+
+# Hombres
+edad_h <- max(media_hombres$Group.1)
+sal_h <- rep(max(media_hombres$x), 85 - edad_h)
+sal_h <- data.frame(Group.1 = (edad_h + 1):85, x = sal_h)
+media_hombres %<>% rbind(sal_h)
+
+# Ordenamiento
+media_mujeres <- media_mujeres[order(media_mujeres$Group.1), ]
+media_hombres <- media_hombres[order(media_hombres$Group.1), ]
+
+# Unificacion
+escala <- data.frame(Edad = 18:85, Hombres = media_hombres$x, Mujeres = media_mujeres$x)
+min_m <- escala$Mujeres[1]
+min_h <- escala$Hombres[1]
+escala %<>% mutate(Hombres = Hombres / min_h, Mujeres = Mujeres / min_m)
+write.csv(escala, "./Escala_edad.csv", row.names = FALSE)
+```
+
+
+
+```{r}
+media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Antiguedad), FUN = mean)
+media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Antiguedad), FUN = mean)
+j <- 2
+while (j <= nrow(media_mujeres)) {
+  diferencia <- media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1]
+  if (diferencia != 1) {
+    m <- (media_mujeres$x[j] - media_mujeres$x[j - 1]) /
+      (media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1])
+    b <- media_mujeres$x[j] - m * media_mujeres$Group.1[j]
+    edad_faltantes <- media_mujeres$Group.1[j - 1] + (1:(diferencia - 1))
+    montos <- m * edad_faltantes + b
+    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
+    media_mujeres <- rbind(media_mujeres[1:j - 1, ], faltantes, media_mujeres[j:nrow(media_mujeres), ])
+  }
+  j <- j + 1
+}
+j <- 2
+while (j <= nrow(media_hombres)) {
+  diferencia <- media_hombres$Group.1[j] - media_hombres$Group.1[j - 1]
+  if (diferencia != 1) {
+    m <- (media_hombres$x[j] - media_hombres$x[j - 1]) /
+      (media_hombres$Group.1[j] - media_hombres$Group.1[j - 1])
+    b <- media_hombres$x[j] - m * media_hombres$Group.1[j]
+    edad_faltantes <- media_hombres$Group.1[j - 1] + (1:(diferencia - 1))
+    montos <- m * edad_faltantes + b
+    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
+    media_hombres <- rbind(media_hombres[1:j - 1, ], faltantes, media_hombres[j:nrow(media_hombres), ])
+  }
+  j <- j + 1
+}
+
+media_mujeres <- rbind(media_mujeres, data.frame(Group.1 = c(45, 46), x = rep(media_mujeres$x[nrow(media_mujeres)])))
+escala_antiguedad <- data.frame(Antiguedad = 0:46, Hombres = media_hombres$x, Mujeres = media_mujeres$x)
+min_h <- escala_antiguedad$Hombres[1]
+min_m <- escala_antiguedad$Mujeres[1]
+escala_antiguedad %<>% mutate(Hombres = Hombres / min_h, Mujeres = Mujeres / min_m)
+write.csv(escala_antiguedad, "./Escala_antiguedad.csv", row.names = FALSE)
+```
+
 
 # Estadistica
 
@@ -180,8 +370,22 @@ exn(ListaDeTablasHombres[[Edad + 1]], x = Edad, type = "curtate")
 
 # Estocástico
 
+## Afiliados
+
+
 ```{r}
+
+
+
+
+```
+
+## Pensionados
+
+```{r}
+
 # Funcion para pensiones herededas
+
 pension_heredada <- function(edad, monto, activo, tasa_descuento, m, inflacion, v) {
   Edad <- edad
   suma <- 0
@@ -216,7 +420,7 @@ pension_heredada <- function(edad, monto, activo, tasa_descuento, m, inflacion, 
     vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
     simulacion <- vivos
     edad <- edad + 1 / m
-    suma <- suma + v^j * ajuste * vivos
+    suma <- suma + v^j * ajuste * vivos * 2^(i == 12)
     ajuste <- ajuste * (1 + inflacion)^(i == 12)
     j <- j + 1 / m
     i <- (1 + i) * (i < 12) + 1 * (i == 12)
@@ -265,6 +469,10 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
   valores <- mapply(FUN = fn2, edad = edades, monto = montos, anti = antiguedades)
   return(sum(valores))
 }
+
+
+
+
 ```
 
 
@@ -273,32 +481,30 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 
 # Funciones que nos sirven a ambos
 
-
 ```{r}
-#porcentaje de pensión
+# porcentaje de pensión
 porcentaje_de_pension <- function(antiguedad) {
-  porcebtajeVejez<-c( (antiguedad >= 5  & antiguedad < 10) * 0.10 +
-                      (antiguedad >= 10 & antiguedad < 15) * 0.15 +
-                      (antiguedad >= 15 & antiguedad < 20) * 0.20 +
-                      (antiguedad >= 20 & antiguedad < 25) * 0.25 +
-                      (antiguedad >= 30 & antiguedad < 35) * 0.30 +
-                      (antiguedad >= 35 & antiguedad < 40) * 0.35 +
-                      (antiguedad >= 40) * 0.4
-                    )
+  porcebtajeVejez <- c((antiguedad >= 5 & antiguedad < 10) * 0.10 +
+    (antiguedad >= 10 & antiguedad < 15) * 0.15 +
+    (antiguedad >= 15 & antiguedad < 20) * 0.20 +
+    (antiguedad >= 20 & antiguedad < 25) * 0.25 +
+    (antiguedad >= 25 & antiguedad < 30) * 0.30 +
+    (antiguedad >= 30 & antiguedad < 35) * 0.35 +
+    (antiguedad >= 35) * 0.4)
   return(porcebtajeVejez)
 }
 
 
 RebajoFondosInsuficientes <- function(MontodePension) {
-  MontoRebajado<-c( 
-     MontodePension*0.10+
-    (MontodePension >= 2293400 ) * 0.35 * MontodePension+
-    (MontodePension >= 2866750 ) * 0.45 * MontodePension+
-    (MontodePension >= 3583437.50) * 0.55 * MontodePension+
-    (MontodePension >= 4479296.88) * 0.65 *MontodePension
+  MontoRebajado <- c(
+    MontodePension * 0.10 +
+      (MontodePension >= 2293400) * 0.35 * MontodePension +
+      (MontodePension >= 2866750) * 0.45 * MontodePension +
+      (MontodePension >= 3583437.50) * 0.55 * MontodePension +
+      (MontodePension >= 4479296.88) * 0.65 * MontodePension
   )
-  if (MontoRebajado>MontodePension*0.55) {
-    return(MontodePension*0.55)
+  if (MontoRebajado > MontodePension * 0.55) {
+    return(MontodePension * 0.55)
   }
   return(MontoRebajado)
 }
@@ -314,8 +520,6 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 
 ## Personas ya pensionadas
 ```{r}
-
-
 ```
 
 
