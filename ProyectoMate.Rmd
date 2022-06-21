@@ -161,9 +161,97 @@ pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
 ```
 
 ## Tablas de multiples decrementos
+
+
 ```{r}
 
+ProMuerte <- function(q1,q2,q3,q4) {
+  a<-q1*((-3*q2*q3*q4)/12+4*(q2*q3+q3*q4+q4*q2)/12-6*(q2+q3+q4)/12+1)
+  b<-q2*((-3*q1*q3*q4)/12+4*(q1*q3+q3*q4+q4*q1)/12-6*(q1+q3+q4)/12+1)
+  c<-q3*((-3*q2*q1*q4)/12+4*(q2*q1+q1*q4+q4*q2)/12-6*(q2+q1+q4)/12+1)
+  d<-q4*((-3*q2*q3*q1)/12+4*(q2*q3+q3*q1+q1*q2)/12-6*(q2+q3+q1)/12+1)
+  qx<-(a+b+c+d)
+  
+  return(data.frame("qx1"=a,"qx2"=b,"qx3"=c,"qx4"=d,"qxC"=qx))
+}
+
+# Se genera lista con las tablas de multiples decrementos de los hombres
+MDListaDeTablasHombres <- list()
+for (m in 1:116) {
+
+qxs<-ProMuerte(TablasDecrementosHombres$Invalidez,TablasDecrementosHombres$Jubilacion,TablasDecrementosHombres$Retiro, qxt(ListaDeTablasHombres[[m]],0,c(1:116)))
+
+Tabladevida<- as.data.frame(qxs)
+
+Tabladevida$lx<-(1000000:(1000000-115))
+
+for (i in 1:115) {
+  Tabladevida$lx[i+1]<-Tabladevida$lx[i]-Tabladevida$lx[i]*Tabladevida$qxC[i]
+}
+
+Tabladevida$d1<-Tabladevida$lx*Tabladevida$qx1
+Tabladevida$d2<-Tabladevida$lx*Tabladevida$qx2
+Tabladevida$d3<-Tabladevida$lx*Tabladevida$qx3
+Tabladevida$d4<-Tabladevida$lx*Tabladevida$qx4
+
+Tabladevida$d4[1]+Tabladevida$lx[2]
+
+MDListaDeTablasHombres[[m]] <- 
+  new(
+    "mdt",
+    table = Tabladevida[,7:10],
+    name = paste("E", (m - 1), sep = "")
+  )
+
+}
+
+names(MDListaDeTablasHombres) <- paste("E", seq(0, 115), sep = "")
+
+
+
+
+
+# Se genera lista con las tablas de multiples decrementos de las mujeres
+
+MDListaDeTablasMujeres <- list()
+for (m in 1:116) {
+qxs<-ProMuerte(TablasDecrementosMujeres$Invalidez,TablasDecrementosMujeres$Jubilacion,TablasDecrementosMujeres$Retiro, qxt(ListaDeTablasMujeres[[m]],0,c(1:116)))
+
+Tabladevida<- as.data.frame(qxs)
+
+Tabladevida$lx<-(1000000:(1000000-115))
+
+for (i in 1:115) {
+  Tabladevida$lx[i+1]<-Tabladevida$lx[i]-Tabladevida$lx[i]*Tabladevida$qxC[i]
+}
+
+Tabladevida$d1<-Tabladevida$lx*Tabladevida$qx1
+Tabladevida$d2<-Tabladevida$lx*Tabladevida$qx2
+Tabladevida$d3<-Tabladevida$lx*Tabladevida$qx3
+Tabladevida$d4<-Tabladevida$lx*Tabladevida$qx4
+
+Tabladevida$d4[1]+Tabladevida$lx[2]
+
+MDListaDeTablasMujeres[[m]] <-
+  new(
+    "mdt",
+    table = Tabladevida[,7:10],
+    name = paste("E", (m - 1), sep = "")
+  )
+}
+
+names(MDListaDeTablasMujeres) <- paste("E", seq(0, 115), sep = "")
 ```
+
+
+
+
+
+
+
+
+
+
 
 
 ## Escala salarial
