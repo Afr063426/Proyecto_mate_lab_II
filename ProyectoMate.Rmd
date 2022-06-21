@@ -17,7 +17,7 @@ library(readxl)
 library(kableExtra)
 library(xtable)
 library(stringr)
-# library(magrittr) # uso de %<>% con funciones de dplyr
+library(magrittr) # uso de %<>% con funciones de dplyr
 # library(xts)
 # library(tinytex)
 
@@ -31,20 +31,16 @@ Pensionados_31_12_2021 <- read_excel("Compañia_Pensionados_31_12_2021.xlsx", ra
 # Tablas de decrementos
 
 TablasDecrementosHombres <- read_excel("Tablas de decrementos.xlsx",
-  sheet = "Hombres"
-)
+  sheet = "Hombres")
 TablasDecrementosMujeres <- read_excel("Tablas de decrementos.xlsx",
-  sheet = "Mujeres"
-)
+  sheet = "Mujeres")
 
 # Tablas de mortalidad dinámicas
 
 TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xls",
-  sheet = "Hombres"
-))
+  sheet = "Hombres"))
 TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xls",
-  sheet = "Mujeres"
-))
+  sheet = "Mujeres"))
 
 # Se genera lista con las tablas actuariales de los hombres
 
@@ -61,6 +57,7 @@ for (j in 1:(length(TablaDinamica_lxsHombres) - 1)) {
     )
   )
 }
+
 names(ListaDeTablasHombres) <- paste("E", seq(0, 115), sep = "")
 
 # Se genera lista con las tablas actuariales de las mujeres
@@ -78,6 +75,7 @@ for (j in 1:(length(TablaDinamica_lxsMujeres) - 1)) {
     )
   )
 }
+
 names(ListaDeTablasMujeres) <- paste("E", seq(0, 115), sep = "")
 
 # Se establece la echa de la evaluación
@@ -162,6 +160,21 @@ afil_mujeres <- Afiliados_31_12_2021 %>% filter(Sexo == "F")
 pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
 ```
 
+## Tablas de multiples decrementos
+```{r}
+
+```
+
+
+## Escala salarial
+```{r}
+
+```
+
+
+
+
+
 
 # Estadistica
 ```{r}
@@ -175,8 +188,6 @@ exn(ListaDeTablasHombres[[Edad + 1]], x = Edad, type = "curtate")
 # Estocástico
 
 ```{r}
-
-
 # Funcion para pensiones herededas
 pension_heredada <- function(edad, monto, activo, tasa_descuento, m, inflacion, v) {
   Edad <- edad
@@ -309,6 +320,11 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 
 ## Personas ya pensionadas
 ```{r}
+
+#Calculo de los q
+
+
+
 
 
 ```
