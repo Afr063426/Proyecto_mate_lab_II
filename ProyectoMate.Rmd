@@ -241,6 +241,10 @@ MDListaDeTablasMujeres[[m]] <-
 }
 
 names(MDListaDeTablasMujeres) <- paste("E", seq(0, 115), sep = "")
+
+rm(qxs)
+
+
 ```
 
 
@@ -365,8 +369,10 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 
 
 # Deterministico
-# Funciones que nos sirven a ambos
 
+
+
+# Funciones que nos sirven a ambos
 
 ```{r}
 #porcentaje de pensión
@@ -375,9 +381,9 @@ porcentaje_de_pension <- function(antiguedad) {
                       (antiguedad >= 10 & antiguedad < 15) * 0.15 +
                       (antiguedad >= 15 & antiguedad < 20) * 0.20 +
                       (antiguedad >= 20 & antiguedad < 25) * 0.25 +
-                      (antiguedad >= 30 & antiguedad < 35) * 0.30 +
-                      (antiguedad >= 35 & antiguedad < 40) * 0.35 +
-                      (antiguedad >= 40) * 0.4
+                      (antiguedad >= 25 & antiguedad < 30) * 0.30 +
+                      (antiguedad >= 30 & antiguedad < 35) * 0.35 +
+                      (antiguedad >= 35) * 0.4
                     )
   return(porcebtajeVejez)
 }
