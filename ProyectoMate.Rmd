@@ -223,7 +223,7 @@ pension_heredada <- function(edad, monto, activo, tasa_descuento, m, inflacion, 
     vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
     simulacion <- vivos
     edad <- edad + 1 / m
-    suma <- suma + v^j * ajuste * vivos
+    suma <- suma + v^j * ajuste * vivos * 2^(i == 12)
     ajuste <- ajuste * (1 + inflacion)^(i == 12)
     j <- j + 1 / m
     i <- (1 + i) * (i < 12) + 1 * (i == 12)
