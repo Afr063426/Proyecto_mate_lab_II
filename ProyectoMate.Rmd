@@ -41,10 +41,6 @@ TablasDecrementosMujeres <- read_excel("Tablas de decrementos.xlsx",
   sheet = "Mujeres"
 )
 
-# Tabla de múltiples decrementos para usar con lifecontingencies
-
-TablaMDHombres <- new("mdt", table=tabla_decrementos_hombres)
-TablaMDMujeres <- new("mdt", table=tabla_decrementos_mujeres)
 
 # Tablas de mortalidad dinámicas
 
@@ -379,7 +375,7 @@ exn(ListaDeTablasHombres[[Edad + 1]], x = Edad, type = "curtate")
 
 ## Afiliados
 
-Para los personas afiliadas al plan ofrecido por la Compañía, se implementa una modificación de uno de los algortimos descritos en Racinello (1988) bajo un modelo de múltiples decrementos. El mencionado algoritmo permite simular la variable aleatoria $Z_{x}$ del tiempo de trabajo residual de un empleado activo de edad $(x)$. En esencia, el método proporciona un criterio para, en un primer paso y dada una muestra de una distribución $\mathcal{U}(0,1)$, decidir si una persona de edad $(x)$ se llega a jubilar, en cuyo caso resta solamente simular su tiempo de vida residual. En su defecto, el algoritmo proporciona una regla para asignar, de acuerdo a una segunda muestra de una distribución $\mathcal{U}(0,1)$, cuál de los decrementos restantes (muerte, invalidez o retiro) sucedió. Como puede comprobarse, el método requiere a lo sumo dos muestras $\mathcal{U}(0,1)$ en aras de obtener una muestra de $Z_{x}$.
+Para los personas afiliadas al plan ofrecido por la Compañía, se implementa una modificación de uno de los algortimos descritos en Racinello (1988) bajo un modelo de múltiples decrementos. El mencionado algoritmo permite simular la variable aleatoria $W_{x}$ del tiempo de trabajo residual de un empleado activo de edad $(x)$. En esencia, el método proporciona un criterio para, en un primer paso y dada una muestra de una distribución $\mathcal{U}(0,1)$, decidir si una persona de edad $(x)$ se llega a jubilar obligatoriamente, en cuyo caso resta solamente simular su tiempo de vida residual. En su defecto, el algoritmo proporciona una regla para asignar, de acuerdo a una segunda muestra de una distribución $\mathcal{U}(0,1)$, cuál de los decrementos restantes sucedió para que no se llegara a la edad máxima de jubilación. Como puede comprobarse, el método requiere a lo sumo dos muestras $\mathcal{U}(0,1)$ en aras de obtener una muestra de $W_{x}$.
 
 Por otro lado, para simular $T_{x}$ en caso de jubilación, se optó por seguir el método de... (pendiente).
 
@@ -387,92 +383,61 @@ Por otro lado, para simular $T_{x}$ en caso de jubilación, se optó por seguir 
 
 # Implementación del algoritmo descrito en Racinello (1988)
 
-costo_afiliado_estoc(x, probs, antiguedad, tasa_descuento, m, inflacion, v){
+# costo_afiliados_estoc(x){
   
-  z <- runif(1)
-  
-  # Criterio del algoritmo en caso de jubilación
-  
-  if(z > probs[85-x+1]) {
-    # Se simula el tiempo de vida residual, pues se sabe que la persona se jubiló
-    
-  }
-  
-#  else{
-    
-    # Criterio del algoritmo en caso de no jubilación
-    
-    # if(r ){}
-    
-    #else if(){}
-    
-    # else{}
-#  }
-}
+  # Primera simulación de una distribución U(0,1)
 
+  x <- 60
+
+  u <- runif(1)
+  
+  # Vector de probabilidades de muerte simples
+  
+  q4_prima <- ListaDeTablasHombres[[x+1]]
+  
+  # Vector con probabilidades (q1, q2, q3, q4, q_Tau)
+  
+  qxs <- ProMuerte(TablasDecrementosHombres$Invalidez, TablasDecrementosHombres$Jubilacion, TablasDecrementosHombres$Retiro, qxt(ListaDeTablasHombres[[x+1]], 0, c(1:116)))
+
+  q <- 1-prod(1-qxs[(x+1):(85),5]) # P(Wx <= 85-x-1)
+  
+  if(u > q) {# Criterio del algoritmo en caso de jubilación obligatoria
+  
+    # Se simula la vida residual (con el momento simple asociado)
+    
+    Tx <- rLife(1, q4_prime, 85, type = "Kx")
+    
+    monto_pension <- 1
+    
+  }else{# Criterio del algoritmo en caso de no jubilación obligaria  
+  # Debe hallarse k tal que P(Wx<=k-1)<u<=P(W_x<=k)
+  hallado <- F
+  k <- 0
+  q_ant <- 0
+  while(hallado == F){
+  q_nuevo <- 1 - (1-q_ant) * (1-qxs[(x+1+k),5]) # kqx^tau
+  if(q_ant<u && u<=q_nuevo){
+  hallado <- T  
+  }
+  k <- k+1
+  print(k)
+  q_ant <- q_nuevo
+  }
+  # Se genera una nueva muestra para determinar el decremento
+  u <- runif(1)
+  denominador <- sum(qxs[(x+k+1),1:4])
+  qbar <- qxs[(x+k+1), 1:4]/denominador # vector probs. condicionales
+
+  }
 
 
 ```
 
 
-## Pensionados
-
-```{r}
-
-# Funcion para pensiones herededas
-
-pension_heredada <- function(edad, monto, activo, tasa_descuento, m, inflacion, v) {
-  Edad <- edad
-  suma <- 0
-  simulacion <- simulaciones
-  ajuste <- 1
-  j <- 1 / m
-  i <- 1
-  # Se verifica que la persona no haya tenido el beneficio mas de 10 ambos
-  if (activo < 10) {
-    tiempo_restante <- c(0:activo - 1)
-    v_n <- v^(tiempo_restante) # Para traer en cada anhos
-    a_m <- (1 + tasa_descuento)^(1 / m) * (1 - v) / (m * ((1 + tasa_descuento)^(1 / m) - 1)) * v_n
-    suma <- suma + simulaciones * sum(a_m)
-    if (sex) {
-      probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 10 - activo)
-    } else {
-      probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 10 - activo)
-    }
-    vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
-    simulacion <- vivos
-    edad <- edad + 10 - activo
-    suma <- suma + v^j * ajuste * vivos
-    ajuste <- ajuste * (1 + inflacion)^(10 - activo)
-    j <- 10
-  }
-  while (simulacion > 0) {
-    if (sex) {
-      probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 1 / m)
-    } else {
-      probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 1 / m)
-    }
-    vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
-    simulacion <- vivos
-    edad <- edad + 1 / m
-    suma <- suma + v^j * ajuste * vivos * 2^(i == 12)
-    ajuste <- ajuste * (1 + inflacion)^(i == 12)
-    j <- j + 1 / m
-    i <- (1 + i) * (i < 12) + 1 * (i == 12)
-  }
-  return(monto * suma / simulaciones)
-}
-
-pension_propia <- function(edad, monto, t_descuento, m, simulaciones, v, inflacion) {
-  Edad <- edad
-  suma <- 0
-  simulacion <- simulaciones
-  ajuste <- Afiliados_31_12_2021
-}
-
 
 # Funcion para determinar pension de personas ya pensionadas
 
+```{r}
 pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
   v <- 1 / (1 + t_descuento)
   # aumento<-(1+0.03)*(1+aumento_real)
@@ -559,14 +524,15 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 
 ## Personal activo
 
-
 ```{r}
 
 ```
 
 
 ## Personas ya pensionadas
+
 ```{r}
+
 ```
 
 
