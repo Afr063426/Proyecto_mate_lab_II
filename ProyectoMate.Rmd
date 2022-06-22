@@ -387,7 +387,7 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
   edades <- base_de_datos$Edad
   montos <- base_de_datos$MON_PEN
   fn2 <- function(edad, monto) {
-    print("Hola")
+    # print("Hola")
     Edad <- edad
     suma <- 0
     simulacion <- simulaciones
@@ -418,8 +418,12 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 ```
 ## Calculo de pension estocastico
 ```{r}
-pension_pen_m <- pension_pen(pen_mujeres, FALSE, 0.07, 12, 1)
-pension_pen_h <- pension_pen(pen_hombres, TRUE, 0.07, 12, 10)
+(pension_pen_m <- pension_pen(pen_mujeres, FALSE, 0.07, 12, 1000))
+(pension_pen_h <- pension_pen(pen_hombres, TRUE, 0.07, 12, 1000))
+
+fileConn <- file("output.txt")
+writeLines(paste("Estocastico:", "Mujeres", pension_pen_m, "Hombres", pension_pen_h, sep = " "), fileConn)
+close(fileConn)
 ```
 
 
