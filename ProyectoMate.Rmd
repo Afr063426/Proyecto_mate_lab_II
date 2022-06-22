@@ -21,6 +21,11 @@ library(magrittr) # uso de %<>% con funciones de dplyr
 # library(xts)
 # library(tinytex)
 
+# Para paralelizar
+library(future.apply)
+plan(multicore)
+
+
 # Se cargan las bases de datos
 
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
@@ -161,6 +166,7 @@ afil_hombres <- Afiliados_31_12_2021 %>% filter(Sexo == "M")
 pen_hombres <- Pensionados_31_12_2021 %>% filter(SEX == "M")
 afil_mujeres <- Afiliados_31_12_2021 %>% filter(Sexo == "F")
 pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
+inflacion <- 0.04
 ```
 
 ## Tablas de multiples decrementos
@@ -320,7 +326,7 @@ write.csv(escala, "./Escala_edad.csv", row.names = FALSE)
 ```
 
 
-
+## Caso por antigüedad 
 ```{r}
 media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Antiguedad), FUN = mean)
 media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Antiguedad), FUN = mean)
@@ -374,63 +380,14 @@ exn(ListaDeTablasHombres[[Edad + 1]], x = Edad, type = "curtate")
 # Estocástico
 
 ```{r}
-# Funcion para pensiones herededas
-pension_heredada <- function(edad, monto, activo, tasa_descuento, m, inflacion, v) {
-  Edad <- edad
-  suma <- 0
-  simulacion <- simulaciones
-  ajuste <- 1
-  j <- 1 / m
-  i <- 1
-  # Se verifica que la persona no haya tenido el beneficio mas de 10 anhos
-  if (activo < 10) {
-    tiempo_restante <- c(0:activo - 1)
-    v_n <- v^(tiempo_restante) # Para traer en cada anhos
-    a_m <- (1 + tasa_descuento)^(1 / m) * (1 - v) / (m * ((1 + tasa_descuento)^(1 / m) - 1)) * v_n
-    suma <- suma + simulaciones * sum(a_m)
-    if (sex) {
-      probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 10 - activo)
-    } else {
-      probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 10 - activo)
-    }
-    vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
-    simulacion <- vivos
-    edad <- edad + 10 - activo
-    suma <- suma + v^j * ajuste * vivos
-    ajuste <- ajuste * (1 + inflacion)^(10 - activo)
-    j <- 10
-  }
-  while (simulacion > 0) {
-    if (sex) {
-      probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 1 / m)
-    } else {
-      probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 1 / m)
-    }
-    vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
-    simulacion <- vivos
-    edad <- edad + 1 / m
-    suma <- suma + v^j * ajuste * vivos * 2^(i == 12)
-    ajuste <- ajuste * (1 + inflacion)^(i == 12)
-    j <- j + 1 / m
-    i <- (1 + i) * (i < 12) + 1 * (i == 12)
-  }
-  return(monto * suma / simulaciones)
-}
-
-pension_propia <- function(edad, monto, t_descuento, m, simulaciones, v, inflacion) {
-  Edad <- edad
-  suma <- 0
-  simulacion <- simulaciones
-  ajuste <- Afiliados_31_12_2021
-}
-
+# Funcion para determinar pension de personas ya pensionadas
 pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
   v <- 1 / (1 + t_descuento)
+  # aumento<-(1+0.03)*(1+aumento_real)
   edades <- base_de_datos$Edad
-  tiempo_activo <- base_de_datos$T_Pension
-  antiguedades <- 0
-  montos <- base_de_datos$MON_PENSION
-  fn2 <- function(edad, monto, activo) {
+  montos <- base_de_datos$MON_PEN
+  fn2 <- function(edad, monto) {
+    print("Hola")
     Edad <- edad
     suma <- 0
     simulacion <- simulaciones
@@ -448,18 +405,22 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
       vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
       simulacion <- vivos
       edad <- edad + 1 / m
-      suma <- suma + v^j * ajuste * vivos
+      suma <- suma + v^j * ajuste * vivos * 2^(i == 11)
       ajuste <- ajuste * (1 + inflacion)^(i == 12)
       j <- j + 1 / m
       i <- (1 + i) * (i < 12) + 1 * (i == 12)
     }
     return(monto * suma / simulaciones)
   }
-  valores <- mapply(FUN = fn2, edad = edades, monto = montos, anti = antiguedades)
+  valores <- unlist(future_mapply(FUN = fn2, edad = edades, monto = montos, SIMPLIFY = FALSE))
   return(sum(valores))
 }
 ```
-
+## Calculo de pension estocastico
+```{r}
+pension_pen_m <- pension_pen(pen_mujeres, FALSE, 0.07, 12, 1)
+pension_pen_h <- pension_pen(pen_hombres, TRUE, 0.07, 12, 10)
+```
 
 
 # Deterministico
