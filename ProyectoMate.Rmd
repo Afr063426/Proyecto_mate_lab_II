@@ -21,6 +21,11 @@ library(magrittr) # uso de %<>% con funciones de dplyr
 # library(xts)
 # library(tinytex)
 
+# Para paralelizar
+library(future.apply)
+plan(multicore)
+
+
 # Se cargan las bases de datos
 
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
@@ -166,6 +171,7 @@ afil_hombres <- Afiliados_31_12_2021 %>% filter(Sexo == "M")
 pen_hombres <- Pensionados_31_12_2021 %>% filter(SEX == "M")
 afil_mujeres <- Afiliados_31_12_2021 %>% filter(Sexo == "F")
 pen_mujeres <- Pensionados_31_12_2021 %>% filter(SEX == "F")
+inflacion <- 0.04
 ```
 
 ## Tablas de multiples decrementos
@@ -316,7 +322,7 @@ write.csv(escala, "./Escala_edad.csv", row.names = FALSE)
 ```
 
 
-
+## Caso por antigüedad 
 ```{r}
 media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Antiguedad), FUN = mean)
 media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Antiguedad), FUN = mean)
@@ -370,15 +376,44 @@ exn(ListaDeTablasHombres[[Edad + 1]], x = Edad, type = "curtate")
 
 # Estocástico
 
+
 ## Afiliados
 
+Para los personas afiliadas al plan ofrecido por la Compañía, se implementa una modificación de uno de los algortimos descritos en Racinello (1988) bajo un modelo de múltiples decrementos. El mencionado algoritmo permite simular la variable aleatoria $Z_{x}$ del tiempo de trabajo residual de un empleado activo de edad $(x)$. En esencia, el método proporciona un criterio para, en un primer paso y dada una muestra de una distribución $\mathcal{U}(0,1)$, decidir si una persona de edad $(x)$ se llega a jubilar, en cuyo caso resta solamente simular su tiempo de vida residual. En su defecto, el algoritmo proporciona una regla para asignar, de acuerdo a una segunda muestra de una distribución $\mathcal{U}(0,1)$, cuál de los decrementos restantes (muerte, invalidez o retiro) sucedió. Como puede comprobarse, el método requiere a lo sumo dos muestras $\mathcal{U}(0,1)$ en aras de obtener una muestra de $Z_{x}$.
+
+Por otro lado, para simular $T_{x}$ en caso de jubilación, se optó por seguir el método de... (pendiente).
 
 ```{r}
 
+# Implementación del algoritmo descrito en Racinello (1988)
+
+costo_afiliado_estoc(x, probs, antiguedad, tasa_descuento, m, inflacion, v){
+  
+  z <- runif(1)
+  
+  # Criterio del algoritmo en caso de jubilación
+  
+  if(z > probs[85-x+1]) {
+    # Se simula el tiempo de vida residual, pues se sabe que la persona se jubiló
+    
+  }
+  
+#  else{
+    
+    # Criterio del algoritmo en caso de no jubilación
+    
+    # if(r ){}
+    
+    #else if(){}
+    
+    # else{}
+#  }
+}
 
 
 
 ```
+
 
 ## Pensionados
 
@@ -435,13 +470,16 @@ pension_propia <- function(edad, monto, t_descuento, m, simulaciones, v, inflaci
   ajuste <- Afiliados_31_12_2021
 }
 
+
+# Funcion para determinar pension de personas ya pensionadas
+
 pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
   v <- 1 / (1 + t_descuento)
+  # aumento<-(1+0.03)*(1+aumento_real)
   edades <- base_de_datos$Edad
-  tiempo_activo <- base_de_datos$T_Pension
-  antiguedades <- 0
-  montos <- base_de_datos$MON_PENSION
-  fn2 <- function(edad, monto, activo) {
+  montos <- base_de_datos$MON_PEN
+  fn2 <- function(edad, monto) {
+    print("Hola")
     Edad <- edad
     suma <- 0
     simulacion <- simulaciones
@@ -459,14 +497,14 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
       vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
       simulacion <- vivos
       edad <- edad + 1 / m
-      suma <- suma + v^j * ajuste * vivos
+      suma <- suma + v^j * ajuste * vivos * 2^(i == 11)
       ajuste <- ajuste * (1 + inflacion)^(i == 12)
       j <- j + 1 / m
       i <- (1 + i) * (i < 12) + 1 * (i == 12)
     }
     return(monto * suma / simulaciones)
   }
-  valores <- mapply(FUN = fn2, edad = edades, monto = montos, anti = antiguedades)
+  valores <- unlist(future_mapply(FUN = fn2, edad = edades, monto = montos, SIMPLIFY = FALSE))
   return(sum(valores))
 }
 
@@ -475,6 +513,11 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 
 ```
 
+## Calculo de pension estocastico
+```{r}
+pension_pen_m <- pension_pen(pen_mujeres, FALSE, 0.07, 12, 1)
+pension_pen_h <- pension_pen(pen_hombres, TRUE, 0.07, 12, 10)
+```
 
 
 # Deterministico
