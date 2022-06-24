@@ -373,43 +373,63 @@ exn(ListaDeTablasHombres[[Edad + 1]], x = Edad, type = "curtate")
 # Estocástico
 
 
-## Afiliados
+## Personal activo
 
-Para los personas afiliadas al plan ofrecido por la Compañía, se implementa una modificación de uno de los algortimos descritos en Racinello (1988) bajo un modelo de múltiples decrementos. El mencionado algoritmo permite simular la variable aleatoria $W_{x}$ del tiempo de trabajo residual de un empleado activo de edad $(x)$. En esencia, el método proporciona un criterio para, en un primer paso y dada una muestra de una distribución $\mathcal{U}(0,1)$, decidir si una persona de edad $(x)$ se llega a jubilar obligatoriamente, en cuyo caso resta solamente simular su tiempo de vida residual. En su defecto, el algoritmo proporciona una regla para asignar, de acuerdo a una segunda muestra de una distribución $\mathcal{U}(0,1)$, cuál de los decrementos restantes sucedió para que no se llegara a la edad máxima de jubilación. Como puede comprobarse, el método requiere a lo sumo dos muestras $\mathcal{U}(0,1)$ en aras de obtener una muestra de $W_{x}$.
+Para los personas afiliadas al plan ofrecido por la Compañía, se implementa una modificación de uno de los algortimos descritos en Bacinello (1988) bajo un modelo de múltiples decrementos. El mencionado algoritmo permite simular la variable aleatoria $W_{x}$ del tiempo (en años) de trabajo residual de un empleado activo de edad $(x)$. En esencia, el método proporciona un criterio para, en un primer paso y dada una muestra de una distribución $\mathcal{U}(0,1)$, decidir si una persona de edad $(x)$ se llega a jubilar obligatoriamente, en cuyo caso resta solamente simular su tiempo de vida residual. En su defecto, el algoritmo proporciona una regla para asignar, de acuerdo a una segunda muestra de una distribución $\mathcal{U}(0,1)$, cuál de los decrementos restantes sucedió para que no se llegara a la edad máxima de jubilación. Como puede comprobarse, el método requiere a lo sumo dos muestras provenientes de una distribución $\mathcal{U}(0,1)$ en aras de obtener una muestra de $W_{x}$.
 
-Por otro lado, para simular $T_{x}$ en caso de jubilación, se optó por seguir el método de... (pendiente).
+Se programa primero la función `costo_afiliado_estoc` que retorna una simulación estocástica del costo que representa un afiliado con características:
+
+-`x`: edad actual de la persona
+-`sexo`: sexo de la persona
+-`salario_ref`: salario de referencia
+-`antiguedad`: antigüedad de la persona en la Compañía
 
 ```{r}
 
 # Implementación del algoritmo descrito en Racinello (1988)
 
-# costo_afiliados_estoc(x){
+costo_afiliado_estoc <- function(x, sexo, salario_ref, antiguedad){ 
   
   # Primera simulación de una distribución U(0,1)
 
-  x <- 60
-
-  u <- runif(1)
+  if(sexo == "M"){
+    xi <- 85
   
-  # Vector de probabilidades de muerte simples
+    # Vector de probabilidades de muerte simples
   
   q4_prima <- ListaDeTablasHombres[[x+1]]
   
   # Vector con probabilidades (q1, q2, q3, q4, q_Tau)
   
   qxs <- ProMuerte(TablasDecrementosHombres$Invalidez, TablasDecrementosHombres$Jubilacion, TablasDecrementosHombres$Retiro, qxt(ListaDeTablasHombres[[x+1]], 0, c(1:116)))
+  
+  }else{
+    xi <- 77
+    # Vector de probabilidades de muerte simples
+  
+  q4_prima <- ListaDeTablasMujeres[[x+1]]
+  
+  # Vector con probabilidades (q1, q2, q3, q4, q_Tau)
+  
+  qxs <- ProMuerte(TablasDecrementosMujeres$Invalidez, TablasDecrementosMujeres$Jubilacion, TablasDecrementosMujeres$Retiro, qxt(ListaDeTablasMujeres[[x+1]], 0, c(1:116)))}
 
-  q <- 1-prod(1-qxs[(x+1):(85),5]) # P(Wx <= 85-x-1)
+  u <- runif(1)
+  
+
+  q <- 1-prod(1-qxs[(x+1):(xi),5]) # P(Wx <= xi-x-1)
   
   if(u > q) {# Criterio del algoritmo en caso de jubilación obligatoria
   
     # Se simula la vida residual (con el momento simple asociado)
     
-    Tx <- rLife(1, q4_prime, 85, type = "Kx")
+    Kx <- rLife(1, q4_prima, xi, type = "Kx")
     
-    monto_pension <- 1
+    porcentaje <- porcentaje_de_pension(antiguedad)
+    
+    costo <- porcentaje * salario_ref * annuity(i = 0.07, n=Kx, m = (xi-x), k = 12, type = "due")
     
   }else{# Criterio del algoritmo en caso de no jubilación obligaria  
+    
   # Debe hallarse k tal que P(Wx<=k-1)<u<=P(W_x<=k)
   hallado <- F
   k <- 0
@@ -417,22 +437,63 @@ Por otro lado, para simular $T_{x}$ en caso de jubilación, se optó por seguir 
   while(hallado == F){
   q_nuevo <- 1 - (1-q_ant) * (1-qxs[(x+1+k),5]) # kqx^tau
   if(q_ant<u && u<=q_nuevo){
-  hallado <- T  
-  }
+  hallado <- T
+  }else{
   k <- k+1
-  print(k)
   q_ant <- q_nuevo
   }
+  }
+  
   # Se genera una nueva muestra para determinar el decremento
   u <- runif(1)
   denominador <- sum(qxs[(x+k+1),1:4])
   qbar <- qxs[(x+k+1), 1:4]/denominador # vector probs. condicionales
+  
+  # Se determina el decremento acontecido
+  if(u<=qbar[1]){# Invalidez
+  
+    
+    Kx <- rLife(1, q4_prima, x+k, type = "Kx")
+    
+    porcentaje <- porcentaje_de_pension(antiguedad)
+    
+    costo <- 0.6 * porcentaje * salario_ref * annuity(i = 0.07, n=Kx, m = (x+k), k = 12, type = "due")
+    
+    
+  }else if(qbar[1]<u && u<=sum(qbar[1:2])){ # Jubilación
+    
+  Kx <- rLife(1, q4_prima, x+k, type = "Kx")
+    
+  porcentaje <- porcentaje_de_pension(antiguedad)
+    
+  costo <- porcentaje * salario_ref * annuity(i = 0.07, n=Kx, m = (x+k), k = 12, type = "due")
+    
 
+  }else if(sum(qbar[1:2])<u && u<=sum(qbar[1:3])){ # Retiro
+  # En este caso no se otorga beneficio
+    
+  costo <- 0
+
+  }else{# Muerte
+  
+   
+  porcentaje <- porcentaje_de_pension(antiguedad)
+    
+  costo <- 0.2 * porcentaje * salario_ref * annuity(i = 0.07, n=10, m = (x+k), k = 12, type = "due")
+   
   }
-
+  }
+  return(costo)
+  }
+  
 
 ```
 
+A continuación se presenta un ejemplo de la funcionalidad del mismo para una mujer de 55 años, empleada activa de la Compañía, con un salario de referencia de 1,000,000.00 y una antigüedad de 5 años:
+
+```{r}
+# costo_afiliado_estoc(x = 55, sexo = "F", salario_ref = 1000000, antiguedad = 5)
+```
 
 
 # Funcion para determinar pension de personas ya pensionadas
@@ -479,6 +540,7 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 ```
 
 ## Calculo de pension estocastico
+
 ```{r}
 (pension_pen_m <- pension_pen(pen_mujeres, FALSE, 0.07, 12, 1000))
 (pension_pen_h <- pension_pen(pen_hombres, TRUE, 0.07, 12, 1000))
