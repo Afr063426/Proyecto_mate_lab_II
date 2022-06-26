@@ -319,6 +319,7 @@ write.csv(escala, "./Escala_edad.csv", row.names = FALSE)
 
 
 ## Caso por antigüedad 
+ 
 ```{r}
 media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Antiguedad), FUN = mean)
 media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Antiguedad), FUN = mean)
@@ -420,9 +421,9 @@ costo_afiliado_estoc <- function(x, sexo, salario_ref, antiguedad){
   
   if(u > q) {# Criterio del algoritmo en caso de jubilación obligatoria
   
-    # Se simula la vida residual (con el momento simple asociado)
+    # Se simula la vida residual (con el modelo simple asociado)
     
-    Kx <- rLife(1, q4_prima, xi, type = "Kx")
+    Kx <- rLife(1,  , xi, type = "Kx")
     
     porcentaje <- porcentaje_de_pension(antiguedad)
     
