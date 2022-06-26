@@ -377,6 +377,7 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 ```{r}
 #porcentaje de pensión
 porcentaje_de_pension <- function(antiguedad) {
+
   porcebtajeVejez<-c( (antiguedad >= 5  & antiguedad < 10) * 0.10 +
                       (antiguedad >= 10 & antiguedad < 15) * 0.15 +
                       (antiguedad >= 15 & antiguedad < 20) * 0.20 +
@@ -414,8 +415,43 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 
 ## Personas ya pensionadas
 ```{r}
+# PensionMensualDeterministico
+##No es un seguro de vida completo y necesita diferimiento
+PensionMensualDeterministico <-
+  function(Edad, hombre, MontoDePension, tasa_descuento) {
+  
+ #Preguntar si lo dividimos entre 12
+  v<-(1)/(1+tasa_descuento/12)
+  #aguinlado
+  MontoAPagar<-MontoDePension*(1+1/12)
+  if(hombre){
+   
+    #anualidad inmediata
+    vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
+    vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
+    anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]], x=Edad,t=vectorMensual )*
+      (v)^(vectorMensual)
+    #monto a pagar con ajuste inflacionario
+    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)
+    suma<-anualidad*MontoAPagar
+  }else{
+   
 
-#Calculo de los q
+    #anualidad inmediata
+    vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
+    vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
+    anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad,t=vectorMensual )*
+      (v)^(vectorMensual)
+    #monto a pagar con ajuste inflacionario
+    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)
+    suma<-anualidad*MontoAPagar
+    
+    }
+    suma<-sum(suma)
+    
+  
+    return(suma)
+}
 
 
 
@@ -424,6 +460,32 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 ```
 
 
+```{r}
+#hombres
+
+#calculo de pension para hombres pensionados
+MontoDePensionMensualParaHombresDeterministicoPensionados <-
+  mapply(
+    PensionMensualDeterministico,
+    pen_hombres$Edad,
+    TRUE,
+    pen_hombres$MON_PEN,
+    0.07
+  )
+
+sum(MontoDePensionMensualParaHombresDeterministicoPensionados)
+
+#calculo de pension para mujeres pensionados
+MontoDePensionMensualParaMujeresDeterministicoPensionados <-
+  mapply(
+    PensionMensualDeterministico,
+    pen_mujeres$Edad,
+    FALSE,
+    pen_mujeres$MON_PEN,
+    0.07
+  )
+sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
+```
 
 
 
