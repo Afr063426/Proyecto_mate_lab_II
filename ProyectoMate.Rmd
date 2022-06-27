@@ -25,7 +25,6 @@ library(magrittr) # uso de %<>% con funciones de dplyr
 library(future.apply)
 plan(multicore)
 
-
 # Se cargan las bases de datos
 
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
@@ -558,17 +557,7 @@ close(fileConn)
 ```{r}
 # porcentaje de pensión
 porcentaje_de_pension <- function(antiguedad) {
-<<<<<<< HEAD
 
-  porcebtajeVejez<-c( (antiguedad >= 5  & antiguedad < 10) * 0.10 +
-                      (antiguedad >= 10 & antiguedad < 15) * 0.15 +
-                      (antiguedad >= 15 & antiguedad < 20) * 0.20 +
-                      (antiguedad >= 20 & antiguedad < 25) * 0.25 +
-                      (antiguedad >= 25 & antiguedad < 30) * 0.30 +
-                      (antiguedad >= 30 & antiguedad < 35) * 0.35 +
-                      (antiguedad >= 35) * 0.4
-                    )
-=======
   porcebtajeVejez <- c((antiguedad >= 5 & antiguedad < 10) * 0.10 +
     (antiguedad >= 10 & antiguedad < 15) * 0.15 +
     (antiguedad >= 15 & antiguedad < 20) * 0.20 +
@@ -576,7 +565,7 @@ porcentaje_de_pension <- function(antiguedad) {
     (antiguedad >= 25 & antiguedad < 30) * 0.30 +
     (antiguedad >= 30 & antiguedad < 35) * 0.35 +
     (antiguedad >= 35) * 0.4)
->>>>>>> 3111c28949dfdf7fa69d3bfa79049bd0e8894248
+
   return(porcebtajeVejez)
 }
 
@@ -604,7 +593,7 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 
 
 ## Personas ya pensionadas
-<<<<<<< HEAD
+
 ```{r}
 # PensionMensualDeterministico
 ##No es un seguro de vida completo y necesita diferimiento
@@ -615,7 +604,7 @@ PensionMensualDeterministico <-
   v<-(1)/(1+tasa_descuento)
   #aguinlado
   MontoAPagar<-MontoDePension
-  vectoraguinalado<-c(rep(0,11),1)
+  vectoraguinalado<-c(rep(0,10),1,0)
   vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
   vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
   
@@ -628,20 +617,17 @@ PensionMensualDeterministico <-
     MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)*2^(vectoraguinalado)
     suma<-anualidad*MontoAPagar
   }else{
-  
     #anualidad inmediata
     anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad,t=vectorMensual )*
       (v)^(vectorMensual)
     #monto a pagar con ajuste inflacionario
     MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)*2^(vectoraguinalado)
     suma<-anualidad*MontoAPagar
-    
     }
     suma<-sum(suma)
-    
-  
     return(suma)
 }
+
 
 ```
 
@@ -660,10 +646,7 @@ MontoDePensionMensualParaHombresDeterministicoPensionados <-
   )
 
 sum(MontoDePensionMensualParaHombresDeterministicoPensionados)
-=======
 
-```{r}
->>>>>>> 3111c28949dfdf7fa69d3bfa79049bd0e8894248
 
 #calculo de pension para mujeres pensionados
 MontoDePensionMensualParaMujeresDeterministicoPensionados <-
@@ -675,6 +658,11 @@ MontoDePensionMensualParaMujeresDeterministicoPensionados <-
     0.07
   )
 sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
+
+
+
+
+
 ```
 
 
