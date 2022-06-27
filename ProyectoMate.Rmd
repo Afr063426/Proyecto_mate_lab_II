@@ -420,30 +420,29 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 PensionMensualDeterministico <-
   function(Edad, hombre, MontoDePension, tasa_descuento) {
   
- #Preguntar si lo dividimos entre 12
-  v<-(1)/(1+tasa_descuento/12)
+ #
+  v<-(1)/(1+tasa_descuento)
   #aguinlado
-  MontoAPagar<-MontoDePension*(1+1/12)
+  MontoAPagar<-MontoDePension
+  vectoraguinalado<-c(rep(0,11),1)
+  vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
+  vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
+  
   if(hombre){
    
     #anualidad inmediata
-    vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
-    vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
     anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]], x=Edad,t=vectorMensual )*
       (v)^(vectorMensual)
     #monto a pagar con ajuste inflacionario
-    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)
+    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)*2^(vectoraguinalado)
     suma<-anualidad*MontoAPagar
   }else{
-   
-
+  
     #anualidad inmediata
-    vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
-    vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
     anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad,t=vectorMensual )*
       (v)^(vectorMensual)
     #monto a pagar con ajuste inflacionario
-    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)
+    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)*2^(vectoraguinalado)
     suma<-anualidad*MontoAPagar
     
     }
@@ -452,10 +451,6 @@ PensionMensualDeterministico <-
   
     return(suma)
 }
-
-
-
-
 
 ```
 
