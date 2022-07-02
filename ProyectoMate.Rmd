@@ -25,7 +25,6 @@ library(magrittr) # uso de %<>% con funciones de dplyr
 library(future.apply)
 plan(multicore)
 
-
 # Se cargan las bases de datos
 
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
@@ -382,18 +381,19 @@ Se programa primero la función `costo_afiliado_estoc` que retorna una simulaci�
 
 -`x`: edad actual de la persona
 -`sexo`: sexo de la persona
--`salario_ref`: salario de referencia
--`antiguedad`: antigüedad de la persona en la Compañía
+-`salario_act`: salario de referencia
+-`antiguedad_act`: antigüedad de la persona en la Compañía
 
 ```{r}
 
 # Implementación del algoritmo descrito en Racinello (1988)
 
-costo_afiliado_estoc <- function(x, sexo, salario_ref, antiguedad){ 
+costo_afiliado_estoc <- function(x, sexo, salario_act, antiguedad_act){ 
   
   # Primera simulación de una distribución U(0,1)
 
   if(sexo == "M"){
+    
     xi <- 85
   
     # Vector de probabilidades de muerte simples
@@ -414,24 +414,31 @@ costo_afiliado_estoc <- function(x, sexo, salario_ref, antiguedad){
   
   qxs <- ProMuerte(TablasDecrementosMujeres$Invalidez, TablasDecrementosMujeres$Jubilacion, TablasDecrementosMujeres$Retiro, qxt(ListaDeTablasMujeres[[x+1]], 0, c(1:116)))}
 
+  # Simulación U(0, 1)
+  
   u <- runif(1)
   
 
   q <- 1-prod(1-qxs[(x+1):(xi),5]) # P(Wx <= xi-x-1)
   
   if(u > q) {# Criterio del algoritmo en caso de jubilación obligatoria
-  
-    # Se simula la vida residual (con el modelo simple asociado)
     
-    Kx <- rLife(1,  , xi, type = "Kx")
+    salrio_ref <-
+  
+    antiguedad <- antiguedad_act+xi-x
     
     porcentaje <- porcentaje_de_pension(antiguedad)
     
+    # Se simula la vida residual (con el modelo simple asociado)
+    
+    Kx <- rLife(1, xi, k = 12, type = "Kx")
+    
     costo <- porcentaje * salario_ref * annuity(i = 0.07, n=Kx, m = (xi-x), k = 12, type = "due")
     
-  }else{# Criterio del algoritmo en caso de no jubilación obligaria  
+  }else{# Criterio del algoritmo en caso de no jubilación obligatoria  
     
   # Debe hallarse k tal que P(Wx<=k-1)<u<=P(W_x<=k)
+    
   hallado <- F
   k <- 0
   q_ant <- 0
@@ -446,11 +453,17 @@ costo_afiliado_estoc <- function(x, sexo, salario_ref, antiguedad){
   }
   
   # Se genera una nueva muestra para determinar el decremento
+  
   u <- runif(1)
+  
   denominador <- sum(qxs[(x+k+1),1:4])
-  qbar <- qxs[(x+k+1), 1:4]/denominador # vector probs. condicionales
+  
+  # vector probsabilidades condicionales
+  
+  qbar <- qxs[(x+k+1), 1:4]/denominador 
   
   # Se determina el decremento acontecido
+  
   if(u<=qbar[1]){# Invalidez
   
     
@@ -559,6 +572,7 @@ close(fileConn)
 ```{r}
 # porcentaje de pensión
 porcentaje_de_pension <- function(antiguedad) {
+
   porcebtajeVejez <- c((antiguedad >= 5 & antiguedad < 10) * 0.10 +
     (antiguedad >= 10 & antiguedad < 15) * 0.15 +
     (antiguedad >= 15 & antiguedad < 20) * 0.20 +
@@ -566,6 +580,7 @@ porcentaje_de_pension <- function(antiguedad) {
     (antiguedad >= 25 & antiguedad < 30) * 0.30 +
     (antiguedad >= 30 & antiguedad < 35) * 0.35 +
     (antiguedad >= 35) * 0.4)
+
   return(porcebtajeVejez)
 }
 
@@ -595,10 +610,75 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 ## Personas ya pensionadas
 
 ```{r}
+# PensionMensualDeterministico
+##No es un seguro de vida completo y necesita diferimiento
+PensionMensualDeterministico <-
+  function(Edad, hombre, MontoDePension, tasa_descuento) {
+  
+ #
+  v<-(1)/(1+tasa_descuento)
+  #aguinlado
+  MontoAPagar<-MontoDePension
+  vectoraguinalado<-c(rep(0,10),1,0)
+  vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
+  vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
+  
+  if(hombre){
+   
+    #anualidad inmediata
+    anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]], x=Edad,t=vectorMensual )*
+      (v)^(vectorMensual)
+    #monto a pagar con ajuste inflacionario
+    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)*2^(vectoraguinalado)
+    suma<-anualidad*MontoAPagar
+  }else{
+    #anualidad inmediata
+    anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad,t=vectorMensual )*
+      (v)^(vectorMensual)
+    #monto a pagar con ajuste inflacionario
+    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)*2^(vectoraguinalado)
+    suma<-anualidad*MontoAPagar
+    }
+    suma<-sum(suma)
+    return(suma)
+}
+
 
 ```
 
 
+```{r}
+#hombres
+
+#calculo de pension para hombres pensionados
+MontoDePensionMensualParaHombresDeterministicoPensionados <-
+  mapply(
+    PensionMensualDeterministico,
+    pen_hombres$Edad,
+    TRUE,
+    pen_hombres$MON_PEN,
+    0.07
+  )
+
+sum(MontoDePensionMensualParaHombresDeterministicoPensionados)
+
+
+#calculo de pension para mujeres pensionados
+MontoDePensionMensualParaMujeresDeterministicoPensionados <-
+  mapply(
+    PensionMensualDeterministico,
+    pen_mujeres$Edad,
+    FALSE,
+    pen_mujeres$MON_PEN,
+    0.07
+  )
+sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
+
+
+
+
+
+```
 
 
 
