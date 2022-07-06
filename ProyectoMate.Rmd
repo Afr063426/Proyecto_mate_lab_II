@@ -593,8 +593,53 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 
 
 ## Personas ya pensionadas
+```{r}
+# PensionMensualDeterministico
+PensionMensualDeterministico <-
+  function(Edad, hombre, MontoDePension, tasa_descuento) {
+  
+ #Preguntar si lo dividimos entre 12
+  v<-(1)/(1+tasa_descuento)
+  #aguinlado
+  MontoAPagar<-MontoDePension*(1+1/12)
+  if(hombre){
+   
+    #anualidad inmediata
+    vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
+    vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
+    anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]], x=Edad,t=vectorMensual )*
+      (v)^(vectorMensual)
+    #monto a pagar con ajuste inflacionario
+    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)
+    suma<-anualidad*MontoAPagar
+  }else{
+   
+
+    #anualidad inmediata
+    vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
+    vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
+    anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad,t=vectorMensual )*
+      (v)^(vectorMensual)
+    #monto a pagar con ajuste inflacionario
+    MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)
+    suma<-anualidad*MontoAPagar
+    
+    }
+    suma<-sum(suma)
+    
+  
+    return(suma)
+}
+
+
+
+
+
+```
+
 
 ```{r}
+#hombres
 # PensionMensualDeterministico
 ##No es un seguro de vida completo y necesita diferimiento
 PensionMensualDeterministico <-
@@ -628,6 +673,28 @@ PensionMensualDeterministico <-
     return(suma)
 }
 
+#calculo de pension para hombres pensionados
+MontoDePensionMensualParaHombresDeterministicoPensionados <-
+  mapply(
+    PensionMensualDeterministico,
+    pen_hombres$Edad,
+    TRUE,
+    pen_hombres$MON_PEN,
+    0.07
+  )
+
+sum(MontoDePensionMensualParaHombresDeterministicoPensionados)
+
+#calculo de pension para mujeres pensionados
+MontoDePensionMensualParaMujeresDeterministicoPensionados <-
+  mapply(
+    PensionMensualDeterministico,
+    pen_mujeres$Edad,
+    FALSE,
+    pen_mujeres$MON_PEN,
+    0.07
+  )
+sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
 
 ```
 
@@ -874,3 +941,8 @@ vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
 ```
 
 
+```{r}
+#Aqui se programara lo necesario para poder estimar los costos de liquidacion
+
+
+```
