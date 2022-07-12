@@ -385,7 +385,7 @@ Primero, se programa una función que calcula el salario de referencia para el c
 ```{r}
 salario_referencia <- function(antiguedad, salario, k){
   
-    # k es el tiempo hasta que ocurre un decremento
+    # k es el tiempo hasta que ocurre un decremento o se llega a la edad máxima de jubilación
   
     t <- max(-antiguedad, k-4):k
 
@@ -397,7 +397,7 @@ salario_referencia <- function(antiguedad, salario, k){
 }
 ```
 
-Por ejemplo, si una persona de edad $50$ sufre el decremento de invelidez $2$ años despúes y tenía a la edad $50$ una antiguedad de $10$ años, entonces el salario de referencia, suponienod un salario actual de $1,000,000$ para el cálculo de su pensión es
+Por ejemplo, si una persona de edad $50$ sufre el decremento de invalidez $2$ años despúes y tenía a la edad $50$ una antiguedad de $10$ años, entonces el salario de referencia, suponienod un salario actual de $1,000,000$ para el cálculo de su pensión es
 
 ```{r}
 salario_referencia(10, 10^6, 2)
@@ -444,7 +444,7 @@ hallar_cuantil <- function(distribucion, p){
 # Pruebas de la función anterior, favor no borrar aún
 x <- 25
 
-qxs <- ProMuerte(TablasDecrementosMujeres$Invalidez, TablasDecrementosMujeres$Jubilacion, TablasDecrementosMujeres$Retiro, qxt(ListaDeTablasMujeres[[x+1]], 0, c(1:116)))
+qxs <- ProMuerte(TablasDecrementosMujeres$Invalidez, TablasDecrementosMujeres$Jubilacion, TablasDecrementosMujeres$Retiro, qxt(ListaDeTablasMujeres[[x+1]], 0, c(1:116))) #
 
 dist <- 1-cumprod(1-qxs[,5])
 prob <- runif(1)
@@ -472,8 +472,7 @@ x <- 23
 sexo <- "F" 
 salario <- 10^6
 antiguedad <- 12
-cant_simulaciones <- 50000000
-  
+cant_simulaciones <- 50000
 # Se define la edad máxima de jubilación y tablas a usar de acuerdo al sexo
   
  
@@ -517,25 +516,43 @@ if(sexo == "M"){
   cant_pensiones_edad_max <- length(u[u > FWx[xi-x-1 + (x+1)]])
   # Se calcula el salario de referencia en este caso
   salario_ref <- salario_referencia(antiguedad, salario, xi-x)
-    # Se simulan los tiempos residuales de vida para los pensionados de edad máxima (xi)
-    
-  tiempos_residuales_vida <- rLife(n=cant_pensiones_edad_max, object = q4_prima, x=xi, k = 12, type = "curtate")
-    
-    anualidades_primer_criterio <- lapply(X = tiempos_residuales_vida, FUN = annuity, i=0.07, m = xi-x, k=12, type="due")
-    
+    # Se simulan los tiempos residuales de vida (en años) para los pensionados de edad máxima (xi)
+      tiempos_residuales_vida <- rLife(n=cant_pensiones_edad_max, object = q4_prima, x=xi, k = 1, type = "curtate")
+    # Se calculan las anualidades mensuales prepagables según los años de vida restantes y con el periodo de diferimiento xi-x
+    anualidades_primer_criterio <- lapply(X = tiempos_residuales_vida, FUN = annuity, i=0.07, m = xi-x, k=12, type="due") %>% unlist()
+    # Se calculan los costos asociados al primer criterio del algoritmo
   costos_primer_criterio <- salario_ref * anualidades_primer_criterio
   
   # SEGUNDO CRITERIO: Decremento antes de jubilación
   # Debe determinarse cuándo ocurrió el decremento y cuál fue
   # Primero se determina cuándo ocurrió, es decir, se buscan los cuantiles de la distribución de Wx que corresponden a las simulaciones U(0,1) restantes
-  cuantiles <- lapply(X = u[u <= FWx[xi-x-1 + (x+1)]], FUN = hallar_cuantil, distribucion = FWx)
   
-  # Se determinan las probabilidades condicionales 
+  cuantiles <- lapply(X = u[u <= FWx[xi-x-1 + (x+1)]], FUN = hallar_cuantil, distribucion = FWx) %>% unlist()
   
-  denominador_probs_condicionales <- lapply(X=qxs[x+cuantiles+1,1:4], FUN=sum)
+  # Se calculan las probabilidades condicionales al momento de ocurrencia del decremento
+  # Primero, se determinan los numeradores
+  numeradores <- qxs[cuantiles+(x+1),1:4]
+  # Segundo, se determinan los denominadores
+  denominadores <- apply(X = probs_condicionales, MARGIN = 1, FUN=sum) %>% unlist()
+  # Tercero, se determinan las probabilidades condicionales dividiendo cada fila (numerador) entre el denominador respectivo
+  
+  probs_condicionales <- sweep(x=numeradores, MARGIN = 1, STATS = denominador, FUN = '/' )
+  
   # Se determinan los escenarios en que ocurrió cada decremento
   
+  u <- runif(cant_simulaciones-cant_pensiones_edad_max)
+  
   # INVALIDEZ
+  
+  pensiones_invalidez <- which( )
+  
+  # JUBILACIÓN
+  
+  # RETIRO
+  
+  # MUERTE
+  
+  
 }
 ```
 
