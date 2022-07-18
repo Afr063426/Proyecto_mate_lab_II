@@ -600,7 +600,6 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 PensionMensualDeterministico <-
   function(Edad, hombre, MontoDePension, tasa_descuento) {
   
- #
   v<-(1)/(1+tasa_descuento)
   #aguinlado
   MontoAPagar<-MontoDePension
