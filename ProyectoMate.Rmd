@@ -5,7 +5,7 @@ date: '2022-06-05'
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, message=FALSE, warning=FALSE}
 # Programacion hecha por Joshua Cervantes, Moisés Monge y Daniel Sabater
 # Se cargan los paquetes
 knitr::opts_chunk$set(echo = FALSE)
@@ -835,8 +835,6 @@ sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
 
 
 ```{r}
-#hombres
-
 #calculo de pension para hombres pensionados
 MontoDePensionMensualParaHombresDeterministicoPensionados <-
   mapply(
@@ -917,11 +915,7 @@ vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
       (v)^(vectorMensual)*Beneficio(x,k)
     suma1 <- sum(anualidad * MontoAPagar)
     
-    PV <- suma1*
-      v^k*pxt(MDListaDeTablasHombres
-[[Edad+1]], x=edad ,t=k)
-*qxt(MDListaDeTablasHombres
-[[Edad+1]], x=edad ,t=k, decrement=1)
+    PV <- suma1*v^k*pxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k, decrement=1)
     
 }
     
@@ -938,10 +932,7 @@ vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
     suma1 <- sum(anualidad * MontoAPagar)
     
     PV <- suma1*
-      v^k*pxt(MDListaDeTablasMujeres
-[[Edad+1]], x=edad ,t=k)
-*qxt(MDListaDeTablasMujeres
-[[Edad+1]], x=edad ,t=k, decrement=1)
+      v^k*pxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k, decrement=1)
     
 }
     
@@ -978,10 +969,7 @@ vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
     suma1 <- sum(anualidad * MontoAPagar)
     
     PV <- suma1*
-      v^k*pxt(MDListaDeTablasHombres
-[[Edad+1]], x=edad ,t=k)
-*qxt(MDListaDeTablasHombres
-[[Edad+1]], x=edad ,t=k, decrement=2)
+      v^k*pxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k, decrement=2)
     
 }
     
@@ -998,10 +986,7 @@ vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
     suma1 <- sum(anualidad * MontoAPagar)
     
     PV <- suma1*
-      v^k*pxt(MDListaDeTablasMujeres
-[[Edad+1]], x=edad ,t=k)
-*qxt(MDListaDeTablasMujeres
-[[Edad+1]], x=edad ,t=k, decrement=2)
+      v^k*pxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k, decrement=2)
     
 }
     
@@ -1038,10 +1023,7 @@ vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
     suma1 <- sum(anualidad * MontoAPagar)
     
     PV <- suma1*
-      v^k*pxt(MDListaDeTablasHombres
-[[Edad+1]], x=edad ,t=k)
-*qxt(MDListaDeTablasHombres
-[[Edad+1]], x=edad ,t=k, decrement=3)
+      v^k*pxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k, decrement=3)
     
 }
     
@@ -1058,10 +1040,7 @@ vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
     suma1 <- sum(anualidad * MontoAPagar)
     
     PV <- suma1*
-      v^k*pxt(MDListaDeTablasMujeres
-[[Edad+1]], x=edad ,t=k)
-*qxt(MDListaDeTablasMujeres
-[[Edad+1]], x=edad ,t=k, decrement=3)
+      v^k*pxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k, decrement=3)
     
 }
     
