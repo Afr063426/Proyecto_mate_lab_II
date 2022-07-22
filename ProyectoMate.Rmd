@@ -42,20 +42,13 @@ TablasDecrementosMujeres <- read_excel("Tablas de decrementos.xlsx",
 
 # Tablas de mortalidad dinámicas
 
-<<<<<<< HEAD
+
 TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xlsx",
   sheet = "Hombres"
 ))
 TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xlsx",
   sheet = "Mujeres"
-=======
-TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xls",
-                                                     sheet = "Hombres"
-))
-TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xls",
-                                                     sheet = "Mujeres"
->>>>>>> 576237330d16b631fcd9ae4c73ec3e1b4ec1584b
-))
+
 
 # Se genera lista con las tablas actuariales de los hombres
 
@@ -825,19 +818,14 @@ PensionMensualDeterministico <-
       
     }
     suma<-sum(suma)
-    
-    
     return(suma)
-<<<<<<< HEAD
 }
-=======
-  }
 
 
 
 
 
->>>>>>> 576237330d16b631fcd9ae4c73ec3e1b4ec1584b
+
 ```
 
 
