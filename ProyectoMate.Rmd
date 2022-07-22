@@ -18,8 +18,7 @@ library(kableExtra)
 library(xtable)
 library(stringr)
 library(magrittr) # uso de %<>% con funciones de dplyr
-# library(xts)
-# library(tinytex)
+
 
 # Para paralelizar
 library(future.apply)
@@ -43,10 +42,10 @@ TablasDecrementosMujeres <- read_excel("Tablas de decrementos.xlsx",
 
 # Tablas de mortalidad dinámicas
 
-TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xls",
+TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xlsx",
   sheet = "Hombres"
 ))
-TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xls",
+TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xlsx",
   sheet = "Mujeres"
 ))
 
@@ -249,6 +248,9 @@ for (m in 1:116) {
 names(MDListaDeTablasMujeres) <- paste("E", seq(0, 115), sep = "")
 
 rm(qxs)
+
+
+
 ```
 
 
@@ -691,6 +693,14 @@ close(fileConn)
 # Funciones que nos sirven a ambos
 
 ```{r}
+x<-c(qxt(MDListaDeTablasHombres[[56+1]], x=56 ,t=1), qxt(MDListaDeTablasHombres[[56+1]], x=56 ,t=1, decrement=1))
+x
+
+
+```
+
+
+```{r}
 # porcentaje de pensión
 porcentaje_de_pension <- function(antiguedad) {
 
@@ -766,11 +776,6 @@ PensionMensualDeterministico <-
   
     return(suma)
 }
-
-
-
-
-
 ```
 
 
