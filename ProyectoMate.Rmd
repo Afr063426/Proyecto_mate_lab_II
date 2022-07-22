@@ -835,33 +835,7 @@ PensionMensualDeterministico <-
 ##No es un seguro de vida completo y necesita diferimiento
 PensionMensualDeterministico <-
   function(Edad, hombre, MontoDePension, tasa_descuento) {
-<<<<<<< HEAD
-    
-    #
-    v<-(1)/(1+tasa_descuento)
-    #aguinlado
-    MontoAPagar<-MontoDePension
-    vectoraguinalado<-c(rep(0,10),1,0)
-    vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
-    vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
-    
-    if(hombre){
-      
-      #anualidad inmediata
-      anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]], x=Edad,t=vectorMensual )*
-        (v)^(vectorMensual)
-      #monto a pagar con ajuste inflacionario
-      MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)*2^(vectoraguinalado)
-      suma<-anualidad*MontoAPagar
-    }else{
-      #anualidad inmediata
-      anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad,t=vectorMensual )*
-        (v)^(vectorMensual)
-      #monto a pagar con ajuste inflacionario
-      MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)*2^(vectoraguinalado)
-      suma<-anualidad*MontoAPagar
-=======
-  
+
   v<-(1)/(1+tasa_descuento)
   #aguinlado
   MontoAPagar<-MontoDePension
@@ -884,7 +858,7 @@ PensionMensualDeterministico <-
     #monto a pagar con ajuste inflacionario
     MontoAPagar <-MontoAPagar*(1+0.04)^(vectorAnualmensual)*2^(vectoraguinalado)
     suma<-anualidad*MontoAPagar
->>>>>>> 8390d65c1cbca2be6d69b3a58086116606ff4a59
+    
     }
     suma<-sum(suma)
     return(suma)
