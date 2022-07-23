@@ -1192,16 +1192,9 @@ DecrementoVejez <-
     vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
     MontoAPagar <-SalarioPromedio*porcentaje_de_pension(antiguedad)*(1+0.03)^(vectorAnualmensual)
     
-<<<<<<< HEAD
+
     if(hombre){
-=======
-    PV <- suma1*v^k*pxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k, decrement=1)
-    
-}
-    
-    MontoAPagar <-MontoAPagar*(1+0.03)^(vectorAnualmensual)
-    suma<-anualidad*MontoAPagar
->>>>>>> 8390d65c1cbca2be6d69b3a58086116606ff4a59
+
       
       for(k in 1:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
@@ -1243,21 +1236,9 @@ DecrementoVejez <-
       
     }
     
-<<<<<<< HEAD
+
   }
-=======
-    PV <- suma1*
-      v^k*pxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k, decrement=1)
-    
-}
-    
-    MontoAPagar <-MontoAPagar*(1+0.03)^(vectorAnualmensual)
-    suma<-anualidad*MontoAPagar
-    
-}
-  
-}
->>>>>>> 8390d65c1cbca2be6d69b3a58086116606ff4a59
+
 ```
 
 ```{r}
@@ -1275,17 +1256,9 @@ DecrementoInvalidez <-
     vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
     MontoAPagar <-SalarioPromedio*porcentaje_de_pension(antiguedad)*(1+0.03)^(vectorAnualmensual)
     
-<<<<<<< HEAD
+
     if(hombre){
-=======
-    PV <- suma1*
-      v^k*pxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k, decrement=2)
-    
-}
-    
-    MontoAPagar <-MontoAPagar*(1+0.03)^(vectorAnualmensual)
-    suma<-anualidad*MontoAPagar
->>>>>>> 8390d65c1cbca2be6d69b3a58086116606ff4a59
+
       
       for(k in 1:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
@@ -1327,21 +1300,9 @@ DecrementoInvalidez <-
       
     }
     
-<<<<<<< HEAD
+
   }
-=======
-    PV <- suma1*
-      v^k*pxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k, decrement=2)
-    
-}
-    
-    MontoAPagar <-MontoAPagar*(1+0.03)^(vectorAnualmensual)
-    suma<-anualidad*MontoAPagar
-    
-}
-  
-}
->>>>>>> 8390d65c1cbca2be6d69b3a58086116606ff4a59
+
 
 ```
 
@@ -1359,17 +1320,9 @@ DecrementoMuerte <-
     vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
     MontoAPagar <-SalarioPromedio*porcentaje_de_pension(antiguedad)*(1+0.03)^(vectorAnualmensual)
     
-<<<<<<< HEAD
+
     if(hombre){
-=======
-    PV <- suma1*
-      v^k*pxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k, decrement=3)
-    
-}
-    
-    MontoAPagar <-MontoAPagar*(1+0.03)^(vectorAnualmensual)
-    suma<-anualidad*MontoAPagar
->>>>>>> 8390d65c1cbca2be6d69b3a58086116606ff4a59
+
       
       for(k in 1:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
@@ -1411,21 +1364,9 @@ DecrementoMuerte <-
       
     }
     
-<<<<<<< HEAD
+
   }
-=======
-    PV <- suma1*
-      v^k*pxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k, decrement=3)
-    
-}
-    
-    MontoAPagar <-MontoAPagar*(1+0.03)^(vectorAnualmensual)
-    suma<-anualidad*MontoAPagar
-    
-}
-  
-}
->>>>>>> 8390d65c1cbca2be6d69b3a58086116606ff4a59
+
 
 
 ```
