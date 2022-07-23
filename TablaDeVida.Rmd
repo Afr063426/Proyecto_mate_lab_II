@@ -1,0 +1,54 @@
+---
+title: "Tablas de vida"
+author: "Daniel Sabater"
+date: '2022-07-22'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(readxl)
+library (xlsx)
+library(tidyverse)
+tavid2000_2150 <- read_excel("tavid2000-2150.xls")
+options(scipen = 999)
+```
+
+```{r}
+tavid2000_2150<-tavid2000_2150%>%select("sex","edad","year","qx")
+tavid2000_2150<-tavid2000_2150[tavid2000_2150$year>=2022,]
+
+Hombre<-tavid2000_2150[tavid2000_2150$sex==1,]
+Mujeres<-tavid2000_2150[tavid2000_2150$sex==2,]
+
+tabladinamica <- function(tabla) {
+  
+  tabla<-tabla%>%select("edad","year","qx")
+  tabla<-tabla%>%pivot_wider(names_from = year, values_from = qx )
+  tabla<-tabla[order(tabla$edad),]
+  tablaPorSexo<-data.frame(matrix(nrow = 116, ncol = 116))
+  for (i in 1:length(tabla$edad)) {
+    tablaPorSexo[i]<-c(rep(0,i-1),as.numeric(diag(as.matrix(tabla[i:length(tabla$edad),2:length(tabla)]))))
+  }
+
+  tablaPorSexo<-cbind(1:116,tablaPorSexo)
+  tablaPorSexo[1:ncol(tablaPorSexo)] <- cumprod(1-tablaPorSexo[1:ncol(tablaPorSexo)])
+  tablaPorSexo<-rbind(1,tablaPorSexo[1:(length(tablaPorSexo$`1:116`)-1),])
+  tablaPorSexo<-tablaPorSexo*100000
+  tablaPorSexo[1]<-0:115
+
+  colnames(tablaPorSexo)<-c("Edad / Edad alcanzada al 2021",0:115)
+  return(tablaPorSexo)
+}
+
+
+write.xlsx(tabladinamica(Hombre), file="TablaDinamica-lxs.xlsx", sheetName="Hombres",
+           row.names = F)
+write.xlsx(tabladinamica(Mujeres), file="TablaDinamica-lxs.xlsx", sheetName="Mujeres", 
+           append=TRUE, row.names = F)
+
+```
+
+
+
+
