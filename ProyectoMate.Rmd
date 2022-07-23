@@ -1379,3 +1379,6 @@ liquidacion<-function(edad, salario_actual, antiguedad,i,inflacion,aumento_real,
 
 
 ```
+
+
+Hola
