@@ -1199,15 +1199,10 @@ DecrementoVejez <-
       for(k in 1:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
         vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
-        anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]], x=Edad+k,t=vectorMensual )*
-          (v)^(vectorMensual)*Beneficio(x,k)
+        anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]],x=Edad+k,t=vectorMensual)*(v)^(vectorMensual)*Beneficio(x,k)
         suma1 <- sum(anualidad * MontoAPagar)
         
-        PV <- suma1*
-          v^k*pxt(MDListaDeTablasHombres
-                  [[Edad+1]], x=edad ,t=k)
-        *qxt(MDListaDeTablasHombres
-             [[Edad+1]], x=edad ,t=k, decrement=1)
+        PV <- suma1*v^k*pxt(MDListaDeTablasHombres[[Edad+1]],x=edad,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k, decrement=1)
         
       }
       
@@ -1219,15 +1214,10 @@ DecrementoVejez <-
       for(k in 1:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
         vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
-        anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad+k,t=vectorMensual )*
-          (v)^(vectorMensual)
+        anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad+k,t=vectorMensual )*(v)^(vectorMensual)
         suma1 <- sum(anualidad * MontoAPagar)
         
-        PV <- suma1*
-          v^k*pxt(MDListaDeTablasMujeres
-                  [[Edad+1]], x=edad ,t=k)
-        *qxt(MDListaDeTablasMujeres
-             [[Edad+1]], x=edad ,t=k, decrement=1)
+        PV <- suma1*v^k*pxt(MDListaDeTablasMujeres[[Edad+1]],x=edad,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k, decrement=1)
         
       }
       
@@ -1263,15 +1253,10 @@ DecrementoInvalidez <-
       for(k in 1:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
         vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
-        anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]], x=Edad+k,t=vectorMensual )*
-          (v)^(vectorMensual)*Beneficio(x,k)
+        anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]],x=Edad+k,t=vectorMensual)*(v)^(vectorMensual)*Beneficio(x,k)
         suma1 <- sum(anualidad * MontoAPagar)
         
-        PV <- suma1*
-          v^k*pxt(MDListaDeTablasHombres
-                  [[Edad+1]], x=edad ,t=k)
-        *qxt(MDListaDeTablasHombres
-             [[Edad+1]], x=edad ,t=k, decrement=2)
+        PV <- suma1*v^k*pxt(MDListaDeTablasHombres[[Edad+1]],x=edad,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k, decrement=2)
         
       }
       
@@ -1283,15 +1268,10 @@ DecrementoInvalidez <-
       for(k in 1:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
         vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
-        anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad+k,t=vectorMensual )*
-          (v)^(vectorMensual)
+        anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad+k,t=vectorMensual )*(v)^(vectorMensual)
         suma1 <- sum(anualidad * MontoAPagar)
         
-        PV <- suma1*
-          v^k*pxt(MDListaDeTablasMujeres
-                  [[Edad+1]], x=edad ,t=k)
-        *qxt(MDListaDeTablasMujeres
-             [[Edad+1]], x=edad ,t=k, decrement=2)
+        PV <- suma1*v^k*pxt(MDListaDeTablasMujeres[[Edad+1]],x=edad,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k, decrement=2)
         
       }
       
@@ -1327,15 +1307,10 @@ DecrementoMuerte <-
       for(k in 1:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
         vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
-        anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]], x=Edad+k,t=vectorMensual )*
-          (v)^(vectorMensual)*Beneficio(x,k)
+        anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]],x=Edad+k,t=vectorMensual)*(v)^(vectorMensual)*Beneficio(x,k)
         suma1 <- sum(anualidad * MontoAPagar)
         
-        PV <- suma1*
-          v^k*pxt(MDListaDeTablasHombres
-                  [[Edad+1]], x=edad ,t=k)
-        *qxt(MDListaDeTablasHombres
-             [[Edad+1]], x=edad ,t=k, decrement=3)
+        PV <- suma1*v^k*pxt(MDListaDeTablasHombres[[Edad+1]],x=edad,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]], x=edad ,t=k, decrement=3)
         
       }
       
@@ -1347,15 +1322,11 @@ DecrementoMuerte <-
       for(k in 1:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1), 1/12))
         vectorAnualmensual<-sort(rep(c(0:(115-Edad)),12))
-        anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad+k,t=vectorMensual )*
-          (v)^(vectorMensual)
+        anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]], x=Edad+k,t=vectorMensual )*(v)^(vectorMensual)
         suma1 <- sum(anualidad * MontoAPagar)
         
         PV <- suma1*
-          v^k*pxt(MDListaDeTablasMujeres
-                  [[Edad+1]], x=edad ,t=k)
-        *qxt(MDListaDeTablasMujeres
-             [[Edad+1]], x=edad ,t=k, decrement=3)
+          v^k*pxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]], x=edad ,t=k, decrement=3)
         
       }
       
