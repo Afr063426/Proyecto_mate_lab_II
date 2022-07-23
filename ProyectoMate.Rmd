@@ -1231,9 +1231,6 @@ sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
 ```{r}
 #calculo de pension para mujeres 
 
-
-
-
 MontoParaMujeresDeterministicoM <-
   future_mapply(
     DecrementoM,
