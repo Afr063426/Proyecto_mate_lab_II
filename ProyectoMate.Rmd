@@ -47,7 +47,7 @@ TablaDinamica_lxsHombres <- as.data.frame(read_excel("TablaDinamica-lxs.xlsx",
   sheet = "Hombres"
 ))
 TablaDinamica_lxsMujeres <- as.data.frame(read_excel("TablaDinamica-lxs.xlsx",
-  sheet = "Mujeres"
+  sheet = "Mujeres"))
 
 
 # Se genera lista con las tablas actuariales de los hombres
@@ -1129,7 +1129,7 @@ MontoDePensionMensualParaHombresDeterministicoPensionados <-
     TRUE,
     pen_hombres$MON_PEN,
     0.07
-  )
+)
 
 sum(MontoDePensionMensualParaHombresDeterministicoPensionados)
 
