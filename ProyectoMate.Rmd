@@ -277,32 +277,31 @@ Las tablas de decrementos constituyen
 ```{r}
 # porcentaje de pensión
 porcentaje_de_pension <- function(antiguedad) {
-  
   porcebtajeVejez <- c((antiguedad >= 5 & antiguedad < 10) * 0.10 +
-                         (antiguedad >= 10 & antiguedad < 15) * 0.15 +
-                         (antiguedad >= 15 & antiguedad < 20) * 0.20 +
-                         (antiguedad >= 20 & antiguedad < 25) * 0.25 +
-                         (antiguedad >= 25 & antiguedad < 30) * 0.30 +
-                         (antiguedad >= 30 & antiguedad < 35) * 0.35 +
-                         (antiguedad >= 35) * 0.4)
-  
-return(porcebtajeVejez)
+    (antiguedad >= 10 & antiguedad < 15) * 0.15 +
+    (antiguedad >= 15 & antiguedad < 20) * 0.20 +
+    (antiguedad >= 20 & antiguedad < 25) * 0.25 +
+    (antiguedad >= 25 & antiguedad < 30) * 0.30 +
+    (antiguedad >= 30 & antiguedad < 35) * 0.35 +
+    (antiguedad >= 35) * 0.4)
+
+  return(porcebtajeVejez)
 }
 
 
 beneficio <- function(antiguedad, decremento, salario, k) {
-  antiguedad<-antiguedad+k
-  #invalidez
-  if (decremento==1 ) {
-    porcentaje_de_salario<-porcentaje_de_pension(antiguedad)*0.6
-  #vejez
-  }else if(decremento==2){
-    porcentaje_de_salario<-porcentaje_de_pension(antiguedad)
-  #muerte
-  }else if(decremento==4){
-    porcentaje_de_salario<-porcentaje_de_pension(antiguedad)*0.2
+  antiguedad <- antiguedad + k
+  # invalidez
+  if (decremento == 1) {
+    porcentaje_de_salario <- porcentaje_de_pension(antiguedad) * 0.6
+    # vejez
+  } else if (decremento == 2) {
+    porcentaje_de_salario <- porcentaje_de_pension(antiguedad)
+    # muerte
+  } else if (decremento == 4) {
+    porcentaje_de_salario <- porcentaje_de_pension(antiguedad) * 0.2
   }
-  return(salario_referencia(antiguedad-k, salario, k)*porcentaje_de_salario) 
+  return(salario_referencia(antiguedad - k, salario, k) * porcentaje_de_salario)
 }
 
 
@@ -455,8 +454,8 @@ Esta función se utiliza en el algortimo de Bacinello (1986) para calcular el sa
 ```{r}
 
 
-salario_referencia <- function(antiguedad, salario, k){
-  
+salario_referencia <- function(antiguedad, salario, k) {
+
   # k es el tiempo hasta que ocurre un decremento o se llega a la edad máxima de jubilación
 
   t <- max(-antiguedad, k - 4):k
@@ -516,9 +515,6 @@ hallar_cuantil <- function(distribucion, p) {
 
   return(k)
 }
-
-
-
 ```
 
 ```{r}
@@ -526,16 +522,16 @@ hallar_cuantil <- function(distribucion, p) {
 x <- 50
 
 qxs <- cbind(
-    qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1, decrement = 1),
-    qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1, decrement = 2),
-    qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1, decrement = 3),
-    qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1, decrement = 4),
-    qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1)
-  )
-dist <- 1-cumprod(1-qxs[,5])
+  qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1, decrement = 1),
+  qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1, decrement = 2),
+  qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1, decrement = 3),
+  qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1, decrement = 4),
+  qxt(MDListaDeTablasHombres[[x + 1]], x = 0:115, t = 1)
+)
+dist <- 1 - cumprod(1 - qxs[, 5])
 prob <- runif(1)
 
-plot(0:115, dist) + abline(h = prob, col="red") + abline(v = hallar_cuantil(dist, prob), col="red")
+plot(0:115, dist) + abline(h = prob, col = "red") + abline(v = hallar_cuantil(dist, prob), col = "red")
 
 # rm(x, dist, prob, qxs)
 ```
@@ -582,84 +578,84 @@ costo_estocastico_grupo_etario <- function(edad, salarios, edad_maxima, antigued
     qxt(lista_tablas_decrementos[[x + 1]], x = 0:115, t = 1, decrement = 4),
     qxt(lista_tablas_decrementos[[x + 1]], x = 0:115, t = 1)
   )
-  
-  
+
+
   # Se define la distribución del modelo de múltiples decrementos (todas las causas)
   FWx <- 1 - cumprod(1 - qxs[, 5])
   # Se toman muestras uniformes en (0,1) según se especificó
   u <- runif(cant_simulaciones)
-  
+
   # PRIMER CRITERIO
   # Cantidad de casos del primer criterio
-  
+
   cant_pensiones_edad_maxima <- length(u[u > FWx[xi - x - 1 + (x + 1)]])
-  
+
   if (cant_pensiones_edad_maxima == 0) {
     costos_totales_edad_maxima <- 0
   } else {
     # Se simulan los tiempos residuales de vida (en años) para los pensionados de edad máxima (xi)
     tiempos_residuales_edad_maxima <- rLife(n = cant_pensiones_edad_maxima, object = q4_prima, x = xi, k = 1, type = "curtate")
     # Se calculan las anualidades mensuales prepagables según los años de vida restantes y con el periodo de diferimiento xi-x, así como los aguinaldos como una anualidad con el mismo periodo de diferimiento y de tipo inmediata (paga al final del año)
-    anualidades_edad_maxima <- lapply(X = tiempos_residuales_edad_maxima, FUN = annuity, i = (0.07-0.04)/1.04, m = xi - x, k = 12, type = "due") %>% unlist()
-    aguinaldo_edad_maxima <- lapply(X = tiempos_residuales_edad_maxima, FUN = annuity, i = (0.07-0.04)/1.04, m = xi - x, k = 1, type = "immediate") %>% unlist()
-    pagos_edad_maxima <- anualidades_edad_maxima + aguinaldo_edad_maxima/12
-    
-    
-    matriz_salarios_ref_edad_maxima <- mapply(salario_referencia_multiple, antiguedad = antiguedades, salario = salarios, MoreArgs = list(k = rep(xi-x, cant_pensiones_edad_maxima)))
-    
+    anualidades_edad_maxima <- lapply(X = tiempos_residuales_edad_maxima, FUN = annuity, i = (0.07 - 0.04) / 1.04, m = xi - x, k = 12, type = "due") %>% unlist()
+    aguinaldo_edad_maxima <- lapply(X = tiempos_residuales_edad_maxima, FUN = annuity, i = (0.07 - 0.04) / 1.04, m = xi - x, k = 1, type = "immediate") %>% unlist()
+    pagos_edad_maxima <- anualidades_edad_maxima + aguinaldo_edad_maxima / 12
+
+
+    matriz_salarios_ref_edad_maxima <- mapply(salario_referencia_multiple, antiguedad = antiguedades, salario = salarios, MoreArgs = list(k = rep(xi - x, cant_pensiones_edad_maxima)))
+
     # Se calculan los porcentajes de pensión
-    
+
     matriz_porcentajes_edad_maxima <- apply(X = outer(antiguedades, rep(xi - x, length(cant_pensiones_edad_maxima)), FUN = "+"), FUN = porcentaje_de_pension, MARGIN = 1)
-    
+
     # Se calculan los costos por edad_maxima
-    
+
     # Matriz con costos por escenario: Personas (columnas) y escenarios (filas)
-    
+
     matriz_costos_edad_maxima <- matriz_porcentajes_edad_maxima * matriz_salarios_ref_edad_maxima * pagos_edad_maxima
-    
+
     # Costos por persona: suma por columna de la matriz de costos
-    if(is.matrix(matriz_costos_edad_maxima )){
-    costos_edad_maxima_por_persona <-apply(X = matriz_costos_edad_maxima, MARGIN = 2, FUN = sum)
-    }else{
+    if (is.matrix(matriz_costos_edad_maxima)) {
+      costos_edad_maxima_por_persona <- apply(X = matriz_costos_edad_maxima, MARGIN = 2, FUN = sum)
+    } else {
       costos_edad_maxima_por_persona <- sapply(X = matriz_costos_edad_maxima, FUN = sum)
     }
-    
+
     # Suma de los costos de todas las personas
-    
+
     costos_totales_edad_maxima <- sum(costos_edad_maxima_por_persona)
   }
-  
+
   # SEGUNDO CRITERIO: Decremento antes de jubilación
-  
+
   if (cant_pensiones_edad_maxima < cant_simulaciones) { # esta condición significa que hay otros escenarios
-    
+
     # Debe determinarse cuándo ocurrió el decremento y cuál fue
     # Primero se determina cuándo ocurrió, es decir, se buscan los cuantiles de la distribución de Wx que corresponden a las simulaciones U(0,1) restantes
-    cuantiles <- lapply(X = u[u <= FWx[xi - x - 1 + (x + 1)]], FUN = hallar_cuantil, distribucion = FWx[(x+1):116]) %>% unlist()
-    
-    
+    cuantiles <- lapply(X = u[u <= FWx[xi - x - 1 + (x + 1)]], FUN = hallar_cuantil, distribucion = FWx[(x + 1):116]) %>% unlist()
+
+
     # Se calculan las probabilidades condicionales al momento de ocurrencia del decremento
     # Primero, se determinan los numeradores
     numeradores <- qxs[cuantiles + (x + 1), 1:4]
     # Segundo, se determinan los denominadores
-    denominadores <-apply(X = numeradores, MARGIN = 1, FUN = sum) %>% unlist()
+    denominadores <- apply(X = numeradores, MARGIN = 1, FUN = sum) %>% unlist()
     denominadores[denominadores == 0] <- 1 # esto se hace para evitar indefiniciones
     # Tercero, se determinan las probabilidades condicionales dividiendo cada fila (numerador) entre el denominador respectivo
     probs_condicionales <- sweep(x = numeradores, MARGIN = 1, STATS = denominadores, FUN = "/")
-    
+
     # Se determinan los escenarios en que ocurrió cada decremento
-    
+
     # Primero, se tienen que simular nuevas muestras U(0,1) para los casos que no fueron incluidos en el primer criterio
     u <- runif(cant_simulaciones - cant_pensiones_edad_maxima)
     # Se determinan los extramemos de los intervalos de decisión
-    extremos_intervalos <-apply(X = probs_condicionales, MARGIN = 1, FUN = cumsum) %>% t()
-    
-    
+    extremos_intervalos <- apply(X = probs_condicionales, MARGIN = 1, FUN = cumsum) %>% t()
+
+
     # INVALIDEZ
-    
+
     # Se determinan las posiciones del vector de muestras uniformes para el segundo esenario en que el decremento se dio por invalidez
     posiciones_invalidez <- which(u <= extremos_intervalos[, 1], arr.ind = T)
-    
+
     if (identical(posiciones_invalidez, integer(0))) {
       costos_totales_invalidez <- 0
     } else {
@@ -667,143 +663,140 @@ costo_estocastico_grupo_etario <- function(edad, salarios, edad_maxima, antigued
       tiempos_hasta_invalidez <- cuantiles[posiciones_invalidez]
       # Se simulan los tiempos residuales de vida
       tiempos_residuales_invalidez <- lapply(X = x + tiempos_hasta_invalidez, FUN = rLife, n = 1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
-      
+
       # Se calculan las anualidades correspondientes
-      
-      anualidades_invalidez <- mapply(annuity, i = (0.07-0.04)/1.04, n = tiempos_residuales_invalidez, m = tiempos_hasta_invalidez, k = 12, type = "due", SIMPLIFY = "vector")
-      
-      aguinaldos_invalidez <- mapply(annuity, i = (0.07-0.04)/1.04, n = tiempos_residuales_invalidez, m = tiempos_hasta_invalidez, k = 1, type = "immediate", SIMPLIFY = "vector")
-      
-      pagos_invalidez <- anualidades_invalidez + aguinaldos_invalidez/12
-      
+
+      anualidades_invalidez <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = tiempos_residuales_invalidez, m = tiempos_hasta_invalidez, k = 12, type = "due", SIMPLIFY = "vector")
+
+      aguinaldos_invalidez <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = tiempos_residuales_invalidez, m = tiempos_hasta_invalidez, k = 1, type = "immediate", SIMPLIFY = "vector")
+
+      pagos_invalidez <- anualidades_invalidez + aguinaldos_invalidez / 12
+
       # Se calculan los salarios de referencia en este caso
-      
+
       matriz_salarios_ref_invalidez <- mapply(salario_referencia_multiple, antiguedad = antiguedades, salario = salarios, MoreArgs = list(k = tiempos_hasta_invalidez))
-      
+
       # Se calculan los porcentajes de pensión
-      
-      matriz_porcentajes_invalidez <-apply(X = outer(antiguedades, tiempos_hasta_invalidez, FUN = "+"), FUN = porcentaje_de_pension, MARGIN = 1)
-      
+
+      matriz_porcentajes_invalidez <- apply(X = outer(antiguedades, tiempos_hasta_invalidez, FUN = "+"), FUN = porcentaje_de_pension, MARGIN = 1)
+
       # Se calculan los costos por invalidez
-      
+
       # Matriz con costos por escenario: Personas (columnas) y escenarios (filas)
-      
+
       matriz_costos_invalidez <- 0.6 * matriz_porcentajes_invalidez * matriz_salarios_ref_invalidez * pagos_invalidez
-      
+
       # Costos por persona: suma por columna de la matriz de costos
-      
-      if(is.matrix(matriz_costos_invalidez)){
-        costos_invalidez_por_persona <-apply(X = matriz_costos_invalidez, MARGIN = 2, FUN = sum)
-      }else{
+
+      if (is.matrix(matriz_costos_invalidez)) {
+        costos_invalidez_por_persona <- apply(X = matriz_costos_invalidez, MARGIN = 2, FUN = sum)
+      } else {
         costos_invalidez_por_persona <- sapply(X = matriz_costos_invalidez, FUN = sum)
       }
-      
+
       # Suma de los costos de todas las personas
-      
+
       costos_totales_invalidez <- sum(costos_invalidez_por_persona)
     }
     # JUBILACIÓN
-    
+
     # Se determinan las posiciones del vector de muestras uniformes para el segundo esenario en que el decremento se dio por jubilación
-    
+
     posiciones_jubilacion <- which(extremos_intervalos[, 1] < u & u <= extremos_intervalos[, 2], arr.ind = T)
-    
-    
+
+
     if (identical(posiciones_jubilacion, integer(0))) {
       costos_totales_jubilacion <- 0
     } else {
       # Se guarda la cantidad de años tras los cuáles ocurrió el decremento
       tiempos_hasta_jubilacion <- cuantiles[posiciones_jubilacion]
-      
+
       # Se simulan los tiempos residuales de vida
       tiempos_residuales_jubilacion <- lapply(X = x + tiempos_hasta_jubilacion, FUN = rLife, n = 1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
-      
+
       # Se calculan las anualidades correspondientes, incluyendo el aguinaldo
-      anualidades_jubilacion <- mapply(annuity, i = (0.07-0.04)/1.04, n = tiempos_residuales_jubilacion, m = tiempos_hasta_jubilacion, k = 12, type = "due", SIMPLIFY = "vector")
-      aguinaldos_jubilacion <- mapply(annuity, i = (0.07-0.04)/1.04, n = tiempos_residuales_jubilacion, m = tiempos_hasta_jubilacion, k = 1, type = "immediate", SIMPLIFY = "vector")
-      pagos_jubilacion <- anualidades_jubilacion + aguinaldos_jubilacion/12
-      
+      anualidades_jubilacion <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = tiempos_residuales_jubilacion, m = tiempos_hasta_jubilacion, k = 12, type = "due", SIMPLIFY = "vector")
+      aguinaldos_jubilacion <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = tiempos_residuales_jubilacion, m = tiempos_hasta_jubilacion, k = 1, type = "immediate", SIMPLIFY = "vector")
+      pagos_jubilacion <- anualidades_jubilacion + aguinaldos_jubilacion / 12
+
       # Se calculan los salarios de referencia en este caso
-      
+
       matriz_salarios_ref_jubilacion <- mapply(salario_referencia_multiple, antiguedad = antiguedades, salario = salarios, MoreArgs = list(k = tiempos_hasta_jubilacion))
-      
+
       # Se calculan los porcentajes de pensión
-      
-      matriz_porcentajes_jubilacion <-apply(X = outer(antiguedades, tiempos_hasta_jubilacion, FUN = "+"), FUN = porcentaje_de_pension, MARGIN = 1)
-      
+
+      matriz_porcentajes_jubilacion <- apply(X = outer(antiguedades, tiempos_hasta_jubilacion, FUN = "+"), FUN = porcentaje_de_pension, MARGIN = 1)
+
       # Se calculan los costos por jubilacion
-      
+
       # Matriz con costos por escenario: Personas (columnas) y escenarios (filas)
-      
+
       matriz_costos_jubilacion <- matriz_porcentajes_jubilacion * matriz_salarios_ref_jubilacion * pagos_jubilacion
-      
+
       # Costos por persona: suma por columna de la matriz de costos
-      
-      if(is.matrix(matriz_costos_jubilacion)){
-        costos_jubilacion_por_persona <-apply(X = matriz_costos_jubilacion, MARGIN = 2, FUN = sum)
-        }
-      else{
-          
-          costos_jubilacion_por_persona <- sapply(X = matriz_costos_jubilacion, FUN = sum)
-        }
-      
+
+      if (is.matrix(matriz_costos_jubilacion)) {
+        costos_jubilacion_por_persona <- apply(X = matriz_costos_jubilacion, MARGIN = 2, FUN = sum)
+      } else {
+        costos_jubilacion_por_persona <- sapply(X = matriz_costos_jubilacion, FUN = sum)
+      }
+
       # Suma de los costos de todas las personas
-      
+
       costos_totales_jubilacion <- sum(costos_jubilacion_por_persona)
     }
-    
+
     # RETIRO
-    
+
     # No es necesario calcular nada ya que no les otorga pensión
-    
+
     # MUERTE
-    
+
     # Se determinan las posiciones del vector de muestras uniformes para el segundo esenario en que el decremento se dio por muerte
-    
+
     posiciones_muerte <- which(extremos_intervalos[, 3] < u, arr.ind = T)
-    
-    
+
+
     if (identical(posiciones_muerte, integer(0))) {
       costos_totales_muerte <- 0
     } else {
       # Se guarda la cantidad de años tras los cuáles ocurrió el decremento
-      
+
       tiempos_hasta_muerte <- cuantiles[posiciones_muerte]
-      
+
       # Se calculan las anualidades a 10 años correspondientes incluyendo el aguinaldo
-      anualidades_muerte <- mapply(annuity, i = (0.07-0.04)/1.04, n = 10, m = tiempos_hasta_muerte, k = 12, type = "due", SIMPLIFY = "vector")
-      aguinaldos_muerte <- mapply(annuity, i = (0.07-0.04)/1.04, n = 10, m = tiempos_hasta_muerte, k = 1, type = "immediate", SIMPLIFY = "vector")
-      pagos_muerte <- anualidades_muerte + aguinaldos_muerte/12
-      
+      anualidades_muerte <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = 10, m = tiempos_hasta_muerte, k = 12, type = "due", SIMPLIFY = "vector")
+      aguinaldos_muerte <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = 10, m = tiempos_hasta_muerte, k = 1, type = "immediate", SIMPLIFY = "vector")
+      pagos_muerte <- anualidades_muerte + aguinaldos_muerte / 12
+
       # Se calculan los salarios de referencia en este caso
-      
+
       matriz_salarios_ref_muerte <- mapply(salario_referencia_multiple, antiguedad = antiguedades, salario = salarios, MoreArgs = list(k = tiempos_hasta_muerte))
-      
+
       # Se calculan los porcentajes de pensión
-      
-      matriz_porcentajes_muerte <-apply(X = outer(antiguedades, tiempos_hasta_muerte, FUN = "+"), FUN = porcentaje_de_pension, MARGIN = 1)
-      
+
+      matriz_porcentajes_muerte <- apply(X = outer(antiguedades, tiempos_hasta_muerte, FUN = "+"), FUN = porcentaje_de_pension, MARGIN = 1)
+
       # Se calculan los costos por muerte
-      
+
       # Matriz con costos por escenario: Personas (columnas) y escenarios (filas)
-      
+
       matriz_costos_muerte <- 0.2 * matriz_porcentajes_muerte * matriz_salarios_ref_muerte * pagos_muerte
-      
+
       # Costos por persona: suma por columna de la matriz de costos
-      if(is.matrix(matriz_costos_muerte)){
-        costos_muerte_por_persona <-apply(X = matriz_costos_muerte, MARGIN = 2, FUN = sum)}
-      else{
+      if (is.matrix(matriz_costos_muerte)) {
+        costos_muerte_por_persona <- apply(X = matriz_costos_muerte, MARGIN = 2, FUN = sum)
+      } else {
         costos_muerte_por_persona <- sapply(X = matriz_costos_muerte, FUN = sum)
-        
       }
-      
+
       # Suma de los costos de todas las personas
-      
+
       costos_totales_muerte <- sum(costos_muerte_por_persona)
     }
   }
   # RETORNAR LOS COSTOS TOTALES
-  
+
   return(sum(costos_totales_edad_maxima, costos_totales_invalidez, costos_totales_jubilacion, costos_totales_muerte) / cant_simulaciones)
 }
 ```
@@ -813,36 +806,40 @@ set.seed(10)
 N <- 100000
 t <- proc.time()
 # Costo hombres (Joshua)
-i<-1
+i <- 1
 for (edad in unique(sort(afil_hombres$Edad))) {
-print(paste("Hombres de ", edad, "años"))
-costos_hombres <- 1:length(unique(afil_hombres$Edad))
-datos <- afil_hombres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
-salarios <- datos$Salario
-antiguedades <- datos$Antiguedad
-costos_hombres[i] <- costo_estocastico_grupo_etario(edad, salarios, 85, antiguedades, N, MDListaDeTablasHombres, ListaDeTablasHombres)
-print(costos_hombres[i])
-i <- i+1
+  print(paste("Hombres de ", edad, "años"))
+  costos_hombres <- 1:length(unique(afil_hombres$Edad))
+  datos <- afil_hombres %>%
+    filter(Edad == edad) %>%
+    select(Salario, Antiguedad)
+  salarios <- datos$Salario
+  antiguedades <- datos$Antiguedad
+  costos_hombres[i] <- costo_estocastico_grupo_etario(edad, salarios, 85, antiguedades, N, MDListaDeTablasHombres, ListaDeTablasHombres)
+  print(costos_hombres[i])
+  i <- i + 1
 }
-proc.time()-t
+proc.time() - t
 archivo <- file("Resultados estocástico grupal Hombres 100000.txt")
 writeLines(paste("Estocastico:", "Hombres", sum(costos_hombres)), archivo)
 close(archivo)
 
 # Costo mujeres (Moisés)
-i<-1
+i <- 1
 t <- proc.time()
 for (edad in unique(sort(afil_mujeres$Edad))) {
-print(paste("Mujeres de ", edad, "años"))
-costos_mujeres <- 1:length(unique(afil_mujeres$Edad))
-datos <- afil_mujeres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
-salarios <- datos$Salario
-antiguedades <- datos$Antiguedad
-costos_mujeres[i] <- costo_estocastico_grupo_etario(edad, salarios, 77, antiguedades, N, MDListaDeTablasMujeres, ListaDeTablasMujeres)
-print(costos_mujeres[i])
-i <- i+1
+  print(paste("Mujeres de ", edad, "años"))
+  costos_mujeres <- 1:length(unique(afil_mujeres$Edad))
+  datos <- afil_mujeres %>%
+    filter(Edad == edad) %>%
+    select(Salario, Antiguedad)
+  salarios <- datos$Salario
+  antiguedades <- datos$Antiguedad
+  costos_mujeres[i] <- costo_estocastico_grupo_etario(edad, salarios, 77, antiguedades, N, MDListaDeTablasMujeres, ListaDeTablasMujeres)
+  print(costos_mujeres[i])
+  i <- i + 1
 }
-proc.time()-t
+proc.time() - t
 archivo <- file("Resultados estocástico grupal Mujeres 100000.txt")
 writeLines(paste("Estocastico:", "Mujeres", sum(costos_mujeres)), archivo)
 close(archivo)
@@ -852,12 +849,12 @@ close(archivo)
 # archivo <- file("Resultados Estocástico por grupo de edad 10000.txt")
 # writeLines(paste("Estocastico:", "Mujeres", sum(costos_mujeres), "Hombres", sum(costos_hombres), sep = " "), archivo)
 # close(archivo)
-# # 
+# #
 # x <- 19
 # datos <- afil_hombres %>% filter(Edad == x) %>% select(Salario, Antiguedad)
 # salarios <- datos$Salario
 # antiguedades <- datos$Antiguedad
-# 
+#
 # # Edad máxima de jubilacion
 # xi <- 85
 # # Vector de probabilidades de muerte simples
@@ -868,7 +865,7 @@ close(archivo)
 #  #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=3),
 #  #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=4),
 #  #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1))
-# 
+#
 # costo_estocastico_grupo_etario(x, salarios, xi, antiguedades, 50000, MDListaDeTablasHombres, ListaDeTablasHombres)
 ```
 
@@ -878,40 +875,42 @@ N <- 10000
 i <- 1
 edad <- afil_mujeres$Edad[i]
 salario <- afil_mujeres$Salario[i]
-antiguedad <-afil_mujeres$Antiguedad[i]
+antiguedad <- afil_mujeres$Antiguedad[i]
 costo_afiliado_estocastico(edad,
-                           salario,
-                           77,
-                           antiguedad,
-                           cant_simulaciones = N,
-                           MDListaDeTablasMujeres,
-                           ListaDeTablasMujeres)
+  salario,
+  77,
+  antiguedad,
+  cant_simulaciones = N,
+  MDListaDeTablasMujeres,
+  ListaDeTablasMujeres
+)
 
 set.seed(10000)
 N <- 10000
 i <- 1
 edad <- afil_hombres$Edad[i]
 salario <- afil_hombres$Salario[i]
-antiguedad <-afil_hombres$Antiguedad[i]
+antiguedad <- afil_hombres$Antiguedad[i]
 costo_afiliado_estocastico(edad,
-                           salario,
-                           85,
-                           antiguedad,
-                           cant_simulaciones = N,
-                           MDListaDeTablasHombres,
-                           ListaDeTablasHombres)
+  salario,
+  85,
+  antiguedad,
+  cant_simulaciones = N,
+  MDListaDeTablasHombres,
+  ListaDeTablasHombres
+)
 
 
 
 # set.seed(10000)
 # salarios <- rep(salario, 100)
 # antiguedades <- rep(antiguedad, 100)
-# costo_estocastico_grupo_etario(edad, 
-#                            salarios, 
+# costo_estocastico_grupo_etario(edad,
+#                            salarios,
 #                            77,
-#                            antiguedades, 
+#                            antiguedades,
 #                            cant_simulaciones = N,
-#                            MDListaDeTablasMujeres, 
+#                            MDListaDeTablasMujeres,
 #                            ListaDeTablasMujeres)/100
 ```
 
@@ -921,7 +920,7 @@ costo_afiliado_estocastico(edad,
 
 costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, cant_simulaciones, lista_tablas_decrementos, lista_tablas_mortalidad) {
   x <- edad
-  #afadfad
+  # afadfad
   xi <- edad_maxima
   q4_prima <- lista_tablas_mortalidad[[x + 1]]
   qxs <- cbind(
@@ -931,145 +930,144 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
     qxt(lista_tablas_decrementos[[x + 1]], x = 0:115, t = 1, decrement = 4),
     qxt(lista_tablas_decrementos[[x + 1]], x = 0:115, t = 1)
   )
-  
+
   # Se define la distribución del modelo de múltiples decrementos (todas las causas)
-  FWx <- 1-cumprod(1-qxs[,5])
+  FWx <- 1 - cumprod(1 - qxs[, 5])
   # Se toman muestras uniformes en (0,1) según se especificó
-  u <- runif(cant_simulaciones)  
-  
+  u <- runif(cant_simulaciones)
+
   # PRIMER CRITERIO: Jubilación obligatoria
   # Se cuenta la cantidad escenarios en que ocurrió esta condición: Se comprueba u>FWx(xi-x-1)
-  cant_pensiones_edad_maxima <- length(u[u > FWx[xi-x-1 + (x+1)]])
-  
-  if(identical(cant_pensiones_edad_maxima, numeric(0))){
-     costos_edad_maxima <- 0
-  }else{
+  cant_pensiones_edad_maxima <- length(u[u > FWx[xi - x - 1 + (x + 1)]])
+
+  if (identical(cant_pensiones_edad_maxima, numeric(0))) {
+    costos_edad_maxima <- 0
+  } else {
     # Se calcula el salario de referencia en este caso
-    salario_ref_edad_maxima <- salario_referencia(antiguedad, salario, xi-x)
+    salario_ref_edad_maxima <- salario_referencia(antiguedad, salario, xi - x)
     # Se simulan los tiempos residuales de vida (en años) para los pensionados de edad máxima (xi)
-    tiempos_residuales_edad_maxima <- rLife(n=cant_pensiones_edad_maxima, object = q4_prima, x=xi, k = 1, type = "curtate")
+    tiempos_residuales_edad_maxima <- rLife(n = cant_pensiones_edad_maxima, object = q4_prima, x = xi, k = 1, type = "curtate")
     # Se calculan las anualidades mensuales prepagables según los años de vida restantes y con el periodo de diferimiento xi-x, así como los aguinaldos como una anualidad con el mismo periodo de diferimiento y de tipo inmediata (paga al final del año)
-    anualidades_edad_maxima <- lapply(X =  tiempos_residuales_edad_maxima, FUN = annuity, i=(0.07-0.04)/1.04, m = xi-x, k=12, type="due") %>% unlist()
-    aguinaldo_edad_maxima <- lapply(X =  tiempos_residuales_edad_maxima, FUN = annuity, i=(0.07-0.04)/1.04, m = xi-x, k=1, type="immediate") %>% unlist()
-    pagos_edad_maxima <- anualidades_edad_maxima + aguinaldo_edad_maxima/12
+    anualidades_edad_maxima <- lapply(X = tiempos_residuales_edad_maxima, FUN = annuity, i = (0.07 - 0.04) / 1.04, m = xi - x, k = 12, type = "due") %>% unlist()
+    aguinaldo_edad_maxima <- lapply(X = tiempos_residuales_edad_maxima, FUN = annuity, i = (0.07 - 0.04) / 1.04, m = xi - x, k = 1, type = "immediate") %>% unlist()
+    pagos_edad_maxima <- anualidades_edad_maxima + aguinaldo_edad_maxima / 12
     # Se calculan los costos asociados al primer criterio del algoritmo
-  costos_edad_maxima <- salario_ref_edad_maxima * pagos_edad_maxima
+    costos_edad_maxima <- salario_ref_edad_maxima * pagos_edad_maxima
   }
-  
-  
+
+
   # SEGUNDO CRITERIO: Decremento antes de jubilación
-  
-  if(cant_pensiones_edad_maxima<cant_simulaciones){# esta condición significa que hay otros escenarios
-    
+
+  if (cant_pensiones_edad_maxima < cant_simulaciones) { # esta condición significa que hay otros escenarios
+
     # Debe determinarse cuándo ocurrió el decremento y cuál fue
     # Primero se determina cuándo ocurrió, es decir, se buscan los cuantiles de la distribución de Wx que corresponden a las simulaciones U(0,1) restantes
-    cuantiles <- lapply(X = u[u <= FWx[xi-x-1 + (x+1)]], FUN = hallar_cuantil, distribucion = FWx[x+1:116]) %>% unlist() 
-    
+    cuantiles <- lapply(X = u[u <= FWx[xi - x - 1 + (x + 1)]], FUN = hallar_cuantil, distribucion = FWx[x + 1:116]) %>% unlist()
+
     # Se calculan las probabilidades condicionales al momento de ocurrencia del decremento
     # Primero, se determinan los numeradores
-    numeradores <- qxs[cuantiles+(x+1),1:4]
+    numeradores <- qxs[cuantiles + (x + 1), 1:4]
     # Segundo, se determinan los denominadores
-    denominadores <- apply(X = numeradores, MARGIN = 1, FUN=sum) %>% unlist()
-    denominadores[denominadores==0] <- 1 # Para evitar indefiniciones
+    denominadores <- apply(X = numeradores, MARGIN = 1, FUN = sum) %>% unlist()
+    denominadores[denominadores == 0] <- 1 # Para evitar indefiniciones
     # Tercero, se determinan las probabilidades condicionales dividiendo cada fila (numerador) entre el denominador respectivo
-    
-    probs_condicionales <- sweep(x=numeradores, MARGIN = 1, STATS = denominadores, FUN = '/' )
-    
+
+    probs_condicionales <- sweep(x = numeradores, MARGIN = 1, STATS = denominadores, FUN = "/")
+
     # Se determinan los escenarios en que ocurrió cada decremento
-    
+
     # Primero, se tienen que simular nuevas muestras U(0,1) para los casos que no fueron incluidos en el primer criterio
-    u <- runif(cant_simulaciones-cant_pensiones_edad_maxima)
+    u <- runif(cant_simulaciones - cant_pensiones_edad_maxima)
     # Se determinan los extramemos de los intervalos de decisión
     extremos_intervalos <- apply(X = probs_condicionales, MARGIN = 1, FUN = cumsum) %>% t()
-    
+
     # INVALIDEZ
-    
+
     # Se determinan las posiciones del vector de muestras uniformes para el segundo esenario en que el decremento se dio por invalidez
-    posiciones_invalidez <- which(u<=extremos_intervalos[,1], arr.ind = T)
+    posiciones_invalidez <- which(u <= extremos_intervalos[, 1], arr.ind = T)
     # Se guarda la cantidad de años tras los cuáles ocurrió el decremento
     tiempos_hasta_invalidez <- cuantiles[posiciones_invalidez]
-    if(identical(tiempos_hasta_invalidez, numeric(0))){
+    if (identical(tiempos_hasta_invalidez, numeric(0))) {
       tiempos_hasta_invalidez <- 0
-      tiempos_residuales_invalidez <-0
-    }else{
+      tiempos_residuales_invalidez <- 0
+    } else {
       # Se simulan los tiempos residuales de vida
-      tiempos_residuales_invalidez <- lapply(X = x+tiempos_hasta_invalidez, FUN = rLife, n=1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
+      tiempos_residuales_invalidez <- lapply(X = x + tiempos_hasta_invalidez, FUN = rLife, n = 1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
     }
     # Se calculan las anualidades correspondientes
-    anualidades_invalidez <- mapply(annuity, i = (0.07-0.04)/1.04, n=tiempos_residuales_invalidez, m=tiempos_hasta_invalidez, k=12, type="due", SIMPLIFY = "vector")
-    aguinaldos_invalidez <- mapply(annuity, i = (0.07-0.04)/1.04, n=tiempos_residuales_invalidez, m=tiempos_hasta_invalidez, k=1, type="immediate", SIMPLIFY = "vector")
-    pagos_invalidez <- anualidades_invalidez + aguinaldos_invalidez/12
-    
+    anualidades_invalidez <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = tiempos_residuales_invalidez, m = tiempos_hasta_invalidez, k = 12, type = "due", SIMPLIFY = "vector")
+    aguinaldos_invalidez <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = tiempos_residuales_invalidez, m = tiempos_hasta_invalidez, k = 1, type = "immediate", SIMPLIFY = "vector")
+    pagos_invalidez <- anualidades_invalidez + aguinaldos_invalidez / 12
+
     # Se calculan los salarios de referencia en este caso
-    salarios_ref_invalidez <- lapply(X=tiempos_hasta_invalidez, FUN = salario_referencia, antiguedad=antiguedad, salario=salario) %>% unlist()
+    salarios_ref_invalidez <- lapply(X = tiempos_hasta_invalidez, FUN = salario_referencia, antiguedad = antiguedad, salario = salario) %>% unlist()
     # Se calculan los porcentajes de pensión
-    porcentajes_invalidez <- lapply(X=antiguedad+tiempos_hasta_invalidez, FUN=porcentaje_de_pension) %>% unlist()
+    porcentajes_invalidez <- lapply(X = antiguedad + tiempos_hasta_invalidez, FUN = porcentaje_de_pension) %>% unlist()
     # Se calculan los costos por invalidez
     costos_invalidez <- 0.6 * porcentajes_invalidez * salarios_ref_invalidez * pagos_invalidez
-    
+
     # JUBILACIÓN
-    
+
     # Se determinan las posiciones del vector de muestras uniformes para el segundo esenario en que el decremento se dio por jubilación
-    
-    posiciones_jubilacion <- which(extremos_intervalos[,1]<u & u<=extremos_intervalos[,2], arr.ind = T)
-    
+
+    posiciones_jubilacion <- which(extremos_intervalos[, 1] < u & u <= extremos_intervalos[, 2], arr.ind = T)
+
     # Se guarda la cantidad de años tras los cuáles ocurrió el decremento
-    tiempos_hasta_jubilacion <- cuantiles[posiciones_jubilacion] 
-    
-    if(identical(tiempos_hasta_jubilacion, numeric(0))){
-      tiempos_hasta_jubilacion<-0
-      tiempos_residuales_jubilacion<-0
-    }else{
+    tiempos_hasta_jubilacion <- cuantiles[posiciones_jubilacion]
+
+    if (identical(tiempos_hasta_jubilacion, numeric(0))) {
+      tiempos_hasta_jubilacion <- 0
+      tiempos_residuales_jubilacion <- 0
+    } else {
       # Se simulan los tiempos residuales de vida
-      tiempos_residuales_jubilacion <- lapply(X = x+tiempos_hasta_jubilacion, FUN = rLife, n=1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
+      tiempos_residuales_jubilacion <- lapply(X = x + tiempos_hasta_jubilacion, FUN = rLife, n = 1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
     }
     # Se calculan las anualidades correspondientes
-    anualidades_jubilacion <- mapply(annuity, i = (0.07-0.04)/1.04, n=tiempos_residuales_jubilacion, m=tiempos_hasta_jubilacion, k=12, type="due", SIMPLIFY = "vector")
-    aguinaldos_jubilacion <- mapply(annuity, i = (0.07-0.04)/1.04, n=tiempos_residuales_jubilacion, m=tiempos_hasta_jubilacion, k=1, type="immediate", SIMPLIFY = "vector")
-    pagos_jubilacion <- anualidades_jubilacion + aguinaldos_jubilacion/12
+    anualidades_jubilacion <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = tiempos_residuales_jubilacion, m = tiempos_hasta_jubilacion, k = 12, type = "due", SIMPLIFY = "vector")
+    aguinaldos_jubilacion <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = tiempos_residuales_jubilacion, m = tiempos_hasta_jubilacion, k = 1, type = "immediate", SIMPLIFY = "vector")
+    pagos_jubilacion <- anualidades_jubilacion + aguinaldos_jubilacion / 12
     # Se calculan los salarios de referencia en este caso
-    salarios_ref_jubilacion <- lapply(X=tiempos_hasta_jubilacion, FUN = salario_referencia, antiguedad=antiguedad, salario=salario) %>% unlist()
+    salarios_ref_jubilacion <- lapply(X = tiempos_hasta_jubilacion, FUN = salario_referencia, antiguedad = antiguedad, salario = salario) %>% unlist()
     # Se calculan los porcentajes de pensión
-    porcentajes_jubilacion <- lapply(X=antiguedad+tiempos_hasta_jubilacion, FUN=porcentaje_de_pension) %>% unlist()
+    porcentajes_jubilacion <- lapply(X = antiguedad + tiempos_hasta_jubilacion, FUN = porcentaje_de_pension) %>% unlist()
     # Se calculan los costos por jubilacion
-    costos_jubilacion <- porcentajes_jubilacion * salarios_ref_jubilacion*pagos_jubilacion
-    
+    costos_jubilacion <- porcentajes_jubilacion * salarios_ref_jubilacion * pagos_jubilacion
+
     # RETIRO
-    
+
     # No es necesario calcular nada ya que no les otorga pensión
-    
+
     # MUERTE
-    
+
     # Se determinan las posiciones del vector de muestras uniformes para el segundo esenario en que el decremento se dio por muerte
-    
-    posiciones_muerte <- which(extremos_intervalos[,3]<u, arr.ind = T)
-    
-    
+
+    posiciones_muerte <- which(extremos_intervalos[, 3] < u, arr.ind = T)
+
+
     # Se guarda la cantidad de años tras los cuáles ocurrió el decremento
-    
-    tiempos_hasta_muerte <- cuantiles[posiciones_muerte] 
-    
-    
-    if(identical(tiempos_hasta_muerte, numeric(0))){
-      tiempos_hasta_muerte<-0
+
+    tiempos_hasta_muerte <- cuantiles[posiciones_muerte]
+
+
+    if (identical(tiempos_hasta_muerte, numeric(0))) {
+      tiempos_hasta_muerte <- 0
     }
-    
-    
+
+
     # Se calculan las anualidades a 10 años correspondientes
-    anualidades_muerte <- mapply(annuity, i = (0.07-0.04)/1.04, n=10, m=tiempos_hasta_muerte, k=12, type="due", SIMPLIFY = "vector")
-    aguinaldos_muerte <- mapply(annuity, i = (0.07-0.04)/1.04, n=10, m=tiempos_hasta_muerte, k=1, type="immediate", SIMPLIFY = "vector")
-    pagos_muerte <- anualidades_muerte + aguinaldos_muerte/12
-    
+    anualidades_muerte <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = 10, m = tiempos_hasta_muerte, k = 12, type = "due", SIMPLIFY = "vector")
+    aguinaldos_muerte <- mapply(annuity, i = (0.07 - 0.04) / 1.04, n = 10, m = tiempos_hasta_muerte, k = 1, type = "immediate", SIMPLIFY = "vector")
+    pagos_muerte <- anualidades_muerte + aguinaldos_muerte / 12
+
     # Se calculan los salarios de referencia en este caso
-    salarios_ref_muerte <- lapply(X=tiempos_hasta_muerte, FUN = salario_referencia, antiguedad=antiguedad, salario=salario) %>% unlist()
+    salarios_ref_muerte <- lapply(X = tiempos_hasta_muerte, FUN = salario_referencia, antiguedad = antiguedad, salario = salario) %>% unlist()
     # Se calculan los porcentajes de pensión
-    porcentajes_muerte <- lapply(X=antiguedad+tiempos_hasta_muerte, FUN=porcentaje_de_pension) %>% unlist()
+    porcentajes_muerte <- lapply(X = antiguedad + tiempos_hasta_muerte, FUN = porcentaje_de_pension) %>% unlist()
     # Se calculan los costos por muerte
     costos_muerte <- 0.2 * porcentajes_muerte * salarios_ref_muerte * pagos_muerte
-    
   }
-  costo_estocastico <- sum(costos_edad_maxima, costos_invalidez, costos_jubilacion, costos_muerte)/ cant_simulaciones 
-  
+  costo_estocastico <- sum(costos_edad_maxima, costos_invalidez, costos_jubilacion, costos_muerte) / cant_simulaciones
+
   return(costo_estocastico)
 }
 ```
@@ -1083,19 +1081,20 @@ N <- 10000
 t <- proc.time()
 costos_mujeres <- 1:nrow(afil_mujeres)
 for (i in 1:nrow(afil_mujeres)) {
-edad <- afil_mujeres$Edad[i]
-salario <- afil_mujeres$Salario[i]
-antiguedad <-afil_mujeres$Antiguedad[i]
-costos_mujeres[i] <- costo_afiliado_estocastico(edad, 
-                                             salario, 
-                                             77,
-                                             antiguedad, 
-                                             cant_simulaciones = N,
-                                             MDListaDeTablasMujeres, 
-                                             ListaDeTablasMujeres)
-print(i)  
+  edad <- afil_mujeres$Edad[i]
+  salario <- afil_mujeres$Salario[i]
+  antiguedad <- afil_mujeres$Antiguedad[i]
+  costos_mujeres[i] <- costo_afiliado_estocastico(edad,
+    salario,
+    77,
+    antiguedad,
+    cant_simulaciones = N,
+    MDListaDeTablasMujeres,
+    ListaDeTablasMujeres
+  )
+  print(i)
 }
-proc.time()-t
+proc.time() - t
 archivo <- file("Resultados estocástico individual Mujeres 10000.txt")
 writeLines(paste("Estocastico:", "Mujeres", sum(costos_mujeres)), archivo)
 close(archivo)
@@ -1104,25 +1103,26 @@ close(archivo)
 t <- proc.time()
 costos_hombres <- 1:nrow(afil_hombres)
 for (i in 1:nrow(afil_hombres)) {
-edad <- afil_hombres$Edad[i]
-salario <- afil_hombres$Salario[i]
-antiguedad <-afil_hombres$Antiguedad[i]
-costos_hombres[i] <- costo_afiliado_estocastico(edad, 
-                                             salario, 
-                                             85,
-                                             antiguedad, 
-                                             cant_simulaciones = N,
-                                             MDListaDeTablasHombres, 
-                                             ListaDeTablasHombres)
-print(i)
+  edad <- afil_hombres$Edad[i]
+  salario <- afil_hombres$Salario[i]
+  antiguedad <- afil_hombres$Antiguedad[i]
+  costos_hombres[i] <- costo_afiliado_estocastico(edad,
+    salario,
+    85,
+    antiguedad,
+    cant_simulaciones = N,
+    MDListaDeTablasHombres,
+    ListaDeTablasHombres
+  )
+  print(i)
 }
 archivo <- file("Resultados estocástico individual Hombres 10000.txt")
 writeLines(paste("Estocastico:", "Hombres", sum(costos_hombres)), archivo)
 close(archivo)
-proc.time()-t
+proc.time() - t
 # t <- proc.time()
 # costos_mujeres <- mapply(FUN = costo_afiliado_estocastico,
-#                         edad= afil_mujeres$Edad, 
+#                         edad= afil_mujeres$Edad,
 #                                    salario=afil_mujeres$Salario,
 #                                    antiguedad=afil_mujeres$Antiguedad,
 #                         MoreArgs = list(edad_maxima=77,
@@ -1130,11 +1130,11 @@ proc.time()-t
 #                                         lista_tablas_mortalidad=ListaDeTablasMujeres),
 #                         SIMPLIFY = "vector")
 # costos_hombres <- mapply(FUN = costo_afiliado_estocastico,
-#                         edad= afil_hombres$Edad, 
+#                         edad= afil_hombres$Edad,
 #                                    salario=afil_hombres$Salario,
 #                                    antiguedad=afil_hombres$Antiguedad,
 #                         MoreArgs = list(edad_maxima=85,
-#                                         cant_simulaciones=N,                                     
+#                                         cant_simulaciones=N,
 #                                         lista_tablas_decrementos=MDListaDeTablasHombres,
 #                                         lista_tablas_mortalidad=ListaDeTablasHombres),
 #                         SIMPLIFY = "vector")
@@ -1144,7 +1144,6 @@ proc.time()-t
 # close(archivo)
 
 # costo_afiliado_estocastico(edad = 50, salario = 10000000, edad_maxima = 85, antiguedad = 10, cant_simulaciones = 50, lista_tablas_decrementos = MDListaDeTablasHombres, lista_tablas_mortalidad = ListaDeTablasHombres)
-
 ```
 
 # Funcion para determinar pension de personas ya pensionadas
@@ -1351,44 +1350,110 @@ Funciones a utilizar
 ## Funcion decremento IV
 ```{r}
 DecrementosIV <-
-  function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento){
-    
-    v<-(1)/(1+tasa_descuento)
-    
-    #La funcion beneficio aun no ha sido definida
-    vectoraguinaldo<-c(rep(0,10),1,0)
-    PV<-0
-    if(hombre){
-      for(k in 0:(115-Edad)){
-        vectorMensual<-(seq(1/12, (115-Edad+1-k), 1/12))
-        vectorAnualmensual<-sort(rep(c(0:(115-Edad-k)),12))
-        MontoAPagar <-beneficio(antiguedad, decremento, ultimo_salario, k)*(1+0.04)^(vectorAnualmensual)*2^vectoraguinaldo
-        
-        
-        anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]],x=Edad+k,t=vectorMensual)*(v)^(vectorMensual)
-        suma1 <- sum(anualidad * MontoAPagar)
-        PV <- PV + suma1*v^(k+1)*pxt(MDListaDeTablasHombres[[Edad+1]],x=Edad,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]],x=Edad+k ,t=1, decrement=decremento)
-        }
+  function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento) {
+    v <- (1) / (1 + tasa_descuento)
 
-    }else{
-      
-      for(k in 0:(115-Edad)){
-        vectorMensual<-(seq(1/12, (115-Edad+1-k), 1/12))
-        vectorAnualmensual<-sort(rep(c(0:(115-Edad-k)),12))
-        MontoAPagar <-beneficio(antiguedad, decremento, ultimo_salario, k)*(1+0.04)^(vectorAnualmensual)*2^vectoraguinaldo
-        
-        
-        anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]],x=Edad+k,t=vectorMensual)*(v)^(vectorMensual)
-        suma1 <- sum(anualidad * MontoAPagar)
-        
-        PV <- PV + suma1*v^(k+1)*pxt(MDListaDeTablasMujeres[[Edad+1]],x=Edad,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]],x=Edad+k ,t=1, decrement=decremento)
-        }
+    # La funcion beneficio aun no ha sido definida
+    vectoraguinaldo <- c(rep(0, 10), 1, 0)
+    PV <- 0
+    if (hombre) {
+      for (k in 0:(115 - Edad)) {
+        vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
+        vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
+        MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
 
+
+        anualidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
+        suma1 <- sum(anualidad * MontoAPagar)
+        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
+      }
+    } else {
+      for (k in 0:(115 - Edad)) {
+        vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
+        vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
+        MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+
+
+        anualidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
+        suma1 <- sum(anualidad * MontoAPagar)
+
+        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
+      }
     }
     return(PV)
   }
-
 ```
+
+
+```{r}
+# Optimizacion de la funcion
+DecrementosIV2 <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento) {
+  # Se va generar una tabla con los montos definidos para cada edad de pension
+  montos_pension <- list()
+  v <- (1) / (1 + tasa_descuento)
+  edades <- min(Edad):max(Edad)
+  # La funcion beneficio aun no ha sido definida
+  vectoraguinaldo <- c(rep(0, 10), 1, 0)
+  PV <- 0
+  for (i in edades) {
+    # Tamaño del vector y posiciones
+    j <- length(0:(115 - i))
+
+    # Vector donde se van guardando los valores sin tener en cuenta el monto de beneficio
+    PV <- numeric()
+
+    # Funcion para estimar cada entrada del PV,  que corresponden
+    # a cada uno
+    funcion_auxiliar <- function(k) {
+      # Vector al que se eleva el v
+      vectorMensual <- (seq(1 / 12, (115 - i + 1 - k), 1 / 12))
+
+      # Vector para controlar la inflacion
+      vectorAnualmensual <- sort(rep(c(0:(115 - i - k)), 12))
+
+      # Vector que contiene los montontos a pagar esto es los montos ajustados por inflacion y multiplicados
+      # por si se debería calcular el aguinaldo
+      MontoAPagar <- (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+
+      # Vector multiplicando las probabilidad de sobrevivencia es decir tpx*v^t/m
+      anualidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = i + k, t = vectorMensual) * (v)^(vectorMensual)
+
+      # Suma total del
+      suma1 <- sum(anualidad * MontoAPagar)
+      PV[k + 1] <- suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
+    }
+
+
+    if (hombre) {
+      for (k in 0:(115 - Edad)) {
+        vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
+        vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
+        MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+
+
+        anualidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
+        suma1 <- sum(anualidad * MontoAPagar)
+        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
+      }
+    } else {
+      for (k in 0:(115 - Edad)) {
+        vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
+        vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
+        MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+
+
+        anualidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
+        suma1 <- sum(anualidad * MontoAPagar)
+
+        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
+      }
+    }
+  }
+
+  return(PV)
+}
+```
+
 
 ## Funcion decremento muerte
 
@@ -1543,73 +1608,69 @@ afil_mujeres$Liquidacion <- unlist(future_mapply(
 
 ```{r}
 DecrementosIV <-
-  function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento){
-    
-    
-    Edad=afil_hombres$Edad[1]
-    hombre=TRUE
-    antiguedad=afil_hombres$Antiguedad[1]
-    ultimo_salario=afil_hombres$Salario[1]
-    tasa_descuento=0.07
-    decremento=2
-    
-    
-    datosPersonas<-cbind(Edad,antiguedad,ultimo_salario)
-    Edades<-min(Edad):max(Edad)
-    v<-(1)/(1+tasa_descuento)
-    datosPorEdades<-data.frame()
-    
-    #La funcion beneficio aun no ha sido definida
-    vectoraguinaldo<-c(rep(0,10),1,0)
-    PV<-0
-    GuardarSuma<-data.frame(matrix(nrow = 116*12, ncol =length(Edades) ))
-    if(hombre){
+  function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento) {
+    Edad <- afil_hombres$Edad[1]
+    hombre <- TRUE
+    antiguedad <- afil_hombres$Antiguedad[1]
+    ultimo_salario <- afil_hombres$Salario[1]
+    tasa_descuento <- 0.07
+    decremento <- 2
+
+
+    datosPersonas <- cbind(Edad, antiguedad, ultimo_salario)
+    Edades <- min(Edad):max(Edad)
+    v <- (1) / (1 + tasa_descuento)
+    datosPorEdades <- data.frame()
+
+    # La funcion beneficio aun no ha sido definida
+    vectoraguinaldo <- c(rep(0, 10), 1, 0)
+    PV <- 0
+    GuardarSuma <- data.frame(matrix(nrow = 116 * 12, ncol = length(Edades)))
+    if (hombre) {
       for (i in 1:length(Edades)) {
-        i=1
-        for(k in 0:(115-Edades[i])){
-          k=1
-          vectorMensual<-(seq(1/12, (115-Edades[i]+1-k), 1/12))
-          vectorAnualmensual<-sort(rep(c(0:(115-Edades[i]-k)),12))
-          
-          anualidad <-pxt(ListaDeTablasHombres[[(Edades[i]+1)]],x=Edades[i]+k,t=vectorMensual)*
+        i <- 1
+        for (k in 0:(115 - Edades[i])) {
+          k <- 1
+          vectorMensual <- (seq(1 / 12, (115 - Edades[i] + 1 - k), 1 / 12))
+          vectorAnualmensual <- sort(rep(c(0:(115 - Edades[i] - k)), 12))
+
+          anualidad <- pxt(ListaDeTablasHombres[[(Edades[i] + 1)]], x = Edades[i] + k, t = vectorMensual) *
             (v)^(vectorMensual)
-          suma1 <- anualidad * (1+0.04)^(vectorAnualmensual)*2^vectoraguinaldo
-          GuardarSuma[k+1]<-c(suma1, rep(0, 116*12-length(suma1)))
+          suma1 <- anualidad * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+          GuardarSuma[k + 1] <- c(suma1, rep(0, 116 * 12 - length(suma1)))
         }
-        datosPorEdades<-cbind(datosPorEdades, GuardarSuma)
+        datosPorEdades <- cbind(datosPorEdades, GuardarSuma)
       }
 
-      
-      datosPersonas(Edad,antiguedad,ultimo_salario)
-      datosPersonas$VP<-1
+
+      datosPersonas(Edad, antiguedad, ultimo_salario)
+      datosPersonas$VP <- 1
       for (i in 1:length(datosPersonas$Edad)) {
-        for(k in 0:(115-datosPersonas$Edad[i])){
-        suma1<-sum(datosPorEdades[k,Edad]* beneficio(datosPersonas$antiguedad[i],decremento,datosPersonas$ultimo_salario[i],k))
-        PV <- PV + suma1*v^(k+1)*pxt(MDListaDeTablasHombres[[Edad+1]],x=datosPersonas$Edad[i],t=k)*
-          qxt(MDListaDeTablasHombres[[datosPersonas$Edad[i]+1]],x=Edad+k ,t=1, decrement=decremento)
+        for (k in 0:(115 - datosPersonas$Edad[i])) {
+          suma1 <- sum(datosPorEdades[k, Edad] * beneficio(datosPersonas$antiguedad[i], decremento, datosPersonas$ultimo_salario[i], k))
+          PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = datosPersonas$Edad[i], t = k) *
+            qxt(MDListaDeTablasHombres[[datosPersonas$Edad[i] + 1]], x = Edad + k, t = 1, decrement = decremento)
         }
-        datosPersonas$VP[i]<-PV
+        datosPersonas$VP[i] <- PV
       }
-
-
     }
     return(datosPersonas)
   }
-
 ```
 
 
 
 ```{r}
 MontoParaMujeresDeterministicoV <-
-    DecrementosIV(
+  DecrementosIV(
     afil_hombres$Edad[1],
     TRUE,
     afil_hombres$Antiguedad[1],
     afil_hombres$Salario[1],
     0.07,
     56,
-    2)
+    2
+  )
 ```
 
 
