@@ -870,6 +870,7 @@ costo_afiliado_estocastico(edad,
 
 costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, cant_simulaciones, lista_tablas_decrementos, lista_tablas_mortalidad) {
   x <- edad
+  #afadfad
   xi <- edad_maxima
   q4_prima <- lista_tablas_mortalidad[[x + 1]]
   qxs <- cbind(
