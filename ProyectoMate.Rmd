@@ -301,7 +301,7 @@ beneficio <- function(antiguedad, decremento, salario, k) {
   }else if(decremento==4){
     porcentaje_de_salario<-porcentaje_de_pension(antiguedad)*0.2
   }
-  return(salario_referencia(antiguedad, salario, k)*porcentaje_de_salario) 
+  return(salario_referencia(antiguedad-k, salario, k)*porcentaje_de_salario) 
 }
 
 
@@ -1280,7 +1280,7 @@ DecrementosIV <-
       for(k in 0:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1-k), 1/12))
         vectorAnualmensual<-sort(rep(c(0:(115-Edad-k)),12))
-        MontoAPagar <-beneficio(antiguedad, decremento, ultimo_salario, k)*(1+0.03)^(vectorAnualmensual)*2^vectoraguinaldo
+        MontoAPagar <-beneficio(antiguedad, decremento, ultimo_salario, k)*(1+0.04)^(vectorAnualmensual)*2^vectoraguinaldo
         
         
         anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]],x=Edad+k,t=vectorMensual)*(v)^(vectorMensual)
@@ -1294,7 +1294,7 @@ DecrementosIV <-
       for(k in 0:(115-Edad)){
         vectorMensual<-(seq(1/12, (115-Edad+1-k), 1/12))
         vectorAnualmensual<-sort(rep(c(0:(115-Edad-k)),12))
-        MontoAPagar <-beneficio(antiguedad, decremento, ultimo_salario, k)*(1+0.03)^(vectorAnualmensual)*2^vectoraguinaldo
+        MontoAPagar <-beneficio(antiguedad, decremento, ultimo_salario, k)*(1+0.04)^(vectorAnualmensual)*2^vectoraguinaldo
         
         
         anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]],x=Edad+k,t=vectorMensual)*(v)^(vectorMensual)
@@ -1323,14 +1323,14 @@ DecrementoM <-
     PV <- 0
     if (hombre) {
       for (k in 0:(85 - Edad)) {
-        MontoAPagar <- beneficio(antiguedad, 4, ultimo_salario, k) * (1 + 0.03)^(vectorAnualmensual) * 2^vectoraguinaldo
+        MontoAPagar <- beneficio(antiguedad, 4, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
         suma1 <- sum((v)^(vectorMensual) * MontoAPagar)
         PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) *
           qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = 4)
       }
     } else {
       for (k in 0:(77 - Edad)) {
-        MontoAPagar <- beneficio(antiguedad, 4, ultimo_salario, k) * (1 + 0.03)^(vectorAnualmensual) * 2^vectoraguinaldo
+        MontoAPagar <- beneficio(antiguedad, 4, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
         suma1 <- sum((v)^(vectorMensual) * MontoAPagar)
         PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) *
           qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = 4)
@@ -1464,6 +1464,15 @@ afil_mujeres$Liquidacion <- unlist(future_mapply(
 DecrementosIV <-
   function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento){
     
+    
+    Edad=afil_hombres$Edad[1]
+    hombre=TRUE
+    antiguedad=afil_hombres$Antiguedad[1]
+    ultimo_salario=afil_hombres$Salario[1]
+    tasa_descuento=0.07
+    decremento=2
+    
+    
     datosPersonas<-cbind(Edad,antiguedad,ultimo_salario)
     Edades<-min(Edad):max(Edad)
     v<-(1)/(1+tasa_descuento)
@@ -1472,15 +1481,19 @@ DecrementosIV <-
     #La funcion beneficio aun no ha sido definida
     vectoraguinaldo<-c(rep(0,10),1,0)
     PV<-0
-    GuardarSuma<-NA
+    GuardarSuma<-data.frame(matrix(nrow = 116*12, ncol =length(Edades) ))
     if(hombre){
-      for (i in Edades) {
+      for (i in 1:length(Edades)) {
+        i=1
         for(k in 0:(115-Edades[i])){
+          k=1
           vectorMensual<-(seq(1/12, (115-Edades[i]+1-k), 1/12))
           vectorAnualmensual<-sort(rep(c(0:(115-Edades[i]-k)),12))
-          anualidad <-pxt(ListaDeTablasHombres[[(Edades[i]+1)]],x=Edades[i]+k,t=vectorMensual)*(v)^(vectorMensual)
-          suma1 <- anualidad * (1+0.03)^(vectorAnualmensual)*2^vectoraguinaldo
-          GuardarSuma[k+1]<-suma1
+          
+          anualidad <-pxt(ListaDeTablasHombres[[(Edades[i]+1)]],x=Edades[i]+k,t=vectorMensual)*
+            (v)^(vectorMensual)
+          suma1 <- anualidad * (1+0.04)^(vectorAnualmensual)*2^vectoraguinaldo
+          GuardarSuma[k+1]<-c(suma1, rep(0, 116*12-length(suma1)))
         }
         datosPorEdades<-cbind(datosPorEdades, GuardarSuma)
       }
@@ -1509,10 +1522,10 @@ DecrementosIV <-
 ```{r}
 MontoParaMujeresDeterministicoV <-
     DecrementosIV(
-    afil_hombres$Edad,
+    afil_hombres$Edad[1],
     TRUE,
-    afil_hombres$Antiguedad,
-    afil_hombres$Salario,
+    afil_hombres$Antiguedad[1],
+    afil_hombres$Salario[1],
     0.07,
     56,
     2)
