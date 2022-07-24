@@ -1459,3 +1459,8 @@ afil_mujeres$Liquidacion <- unlist(future_mapply(
   porcentaje_aporte = porcentaje_aporte, sexo = "F"
 ))
 ```
+
+
+
+
+Holaaaa 
