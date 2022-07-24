@@ -738,56 +738,56 @@ costo_estocastico_grupo_etario <- function(edad, salarios, edad_maxima, antigued
 ```
 
 ```{r Prueba estocástico por grupo etario}
+# set.seed(12)
+# N <- 10000
+# t <- proc.time()
+# # Costo hombres
+# i<-1
+# for (edad in unique(sort(afil_hombres$Edad))) {
+# print(paste("Hombres de ", edad, "años"))
+# costos_hombres <- 1:length(unique(afil_hombres$Edad))
+# datos <- afil_hombres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
+# salarios <- datos$Salario
+# antiguedades <- datos$Antiguedad
+# costos_hombres[i] <- costo_estocastico_grupo_etario(edad, salarios, 85, antiguedades, N, MDListaDeTablasHombres, ListaDeTablasHombres)
+# print(costos_hombres[i])
+# i <- i+1
+# }
+# # Costo mujeres
+# i<-1
+# for (edad in unique(sort(afil_mujeres$Edad))) {
+# print(paste("Mujeres de ", edad, "años"))
+# costos_mujeres <- 1:length(unique(afil_mujeres$Edad))
+# datos <- afil_mujeres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
+# salarios <- datos$Salario
+# antiguedades <- datos$Antiguedad
+# costos_mujeres[i] <- costo_estocastico_grupo_etario(edad, salarios, 77, antiguedades, N, MDListaDeTablasMujeres, ListaDeTablasMujeres)
+# print(costos_mujeres[i])
+# i <- i+1
+# }
+# proc.time()-t
 
-N <- 1000000
-t <- proc.time()
-# Costo hombres
-i<-1
-for (edad in unique(sort(afil_hombres$Edad))) {
-print(paste("Hombres de ", edad, "años"))
-costos_hombres <- 1:length(unique(afil_hombres$Edad))
-datos <- afil_hombres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
-salarios <- datos$Salario
-antiguedades <- datos$Antiguedad
-costos_hombres[i] <- costo_estocastico_grupo_etario(edad, salarios, 85, antiguedades, N, MDListaDeTablasHombres, ListaDeTablasHombres)
-print(costos_hombres[i])
-i <- i+1
-}
-# Costo mujeres
-i<-1
-for (edad in unique(sort(afil_mujeres$Edad))) {
-print(paste("Mujeres de ", edad, "años"))
-costos_mujeres <- 1:length(unique(afil_mujeres$Edad))
-datos <- afil_mujeres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
-salarios <- datos$Salario
-antiguedades <- datos$Antiguedad
-costos_mujeres[i] <- costo_estocastico_grupo_etario(edad, salarios, 77, antiguedades, N, MDListaDeTablasMujeres, ListaDeTablasMujeres)
-print(costos_mujeres[i])
-i <- i+1
-}
-proc.time()-t
-
-archivo <- file("Resultados Estocástico por grupo de edad 50000.txt")
-writeLines(paste("Estocastico:", "Mujeres", sum(costos_mujeres), "Hombres", sum(costos_hombres), sep = " "), archivo)
-close(archivo)
-
-x <- 19
-datos <- afil_hombres %>% filter(Edad == x) %>% select(Salario, Antiguedad)
-salarios <- datos$Salario
-antiguedades <- datos$Antiguedad
-
-# Edad máxima de jubilacion
-xi <- 85
-# Vector de probabilidades de muerte simples
-# q4_prima <- ListaDeTablasMujeres[[x+1]]
-# Vector con probabilidades (q1, q2, q3, q4, q_Tau)
- # qxs <- cbind(qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=1),
- #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=2),
- #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=3),
- #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=4),
- #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1))
-
-costo_estocastico_grupo_etario(x, salarios, xi, antiguedades, 50000, MDListaDeTablasHombres, ListaDeTablasHombres)
+#archivo <- file("Resultados Estocástico por grupo de edad 10000.txt")
+#writeLines(paste("Estocastico:", "Mujeres", sum(costos_mujeres), "Hombres", sum(costos_hombres), sep = " "), archivo)
+#close(archivo)
+# 
+# x <- 19
+# datos <- afil_hombres %>% filter(Edad == x) %>% select(Salario, Antiguedad)
+# salarios <- datos$Salario
+# antiguedades <- datos$Antiguedad
+# 
+# # Edad máxima de jubilacion
+# xi <- 85
+# # Vector de probabilidades de muerte simples
+# # q4_prima <- ListaDeTablasMujeres[[x+1]]
+# # Vector con probabilidades (q1, q2, q3, q4, q_Tau)
+#  # qxs <- cbind(qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=1),
+#  #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=2),
+#  #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=3),
+#  #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1, decrement=4),
+#  #         qxt(MDListaDeTablasMujeres[[x+1]], x=0:115, t=1))
+# 
+# costo_estocastico_grupo_etario(x, salarios, xi, antiguedades, 50000, MDListaDeTablasHombres, ListaDeTablasHombres)
 ```
 
 ### Versión con simulación individual
@@ -813,28 +813,28 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
   
   # PRIMER CRITERIO: Jubilación obligatoria
   # Se cuenta la cantidad escenarios en que ocurrió esta condición: Se comprueba u>FWx(xi-x-1)
-  cant_pensiones_edad_max <- length(u[u > FWx[xi-x-1 + (x+1)]])
+  cant_pensiones_edad_maxima <- length(u[u > FWx[xi-x-1 + (x+1)]])
   
   salario_ref_primer_criterio <- 0
   
-  if(identical(cant_pensiones_edad_max, numeric(0))){
+  if(identical(cant_pensiones_edad_maxima, numeric(0))){
     pagos_primer_criterio <- 0
   }else{
     # Se calcula el salario de referencia en este caso
     salario_ref_primer_criterio <- salario_referencia(antiguedad, salario, xi-x)
     # Se simulan los tiempos residuales de vida (en años) para los pensionados de edad máxima (xi)
-    tiempos_residuales_edad_max <- rLife(n=cant_pensiones_edad_max, object = q4_prima, x=xi, k = 1, type = "curtate")
+    tiempos_residuales_edad_maxima <- rLife(n=cant_pensiones_edad_maxima, object = q4_prima, x=xi, k = 1, type = "curtate")
     # Se calculan las anualidades mensuales prepagables según los años de vida restantes y con el periodo de diferimiento xi-x, así como los aguinaldos como una anualidad con el mismo periodo de diferimiento y de tipo inmediata (paga al final del año)
-    anualidades_primer_criterio <- lapply(X =  tiempos_residuales_edad_max, FUN = annuity, i=0.07, m = xi-x, k=12, type="due") %>% unlist()
-    aguinaldo_primer_criterio <- lapply(X =  tiempos_residuales_edad_max, FUN = annuity, i=0.07, m = xi-x, k=1, type="immediate") %>% unlist()
+    anualidades_primer_criterio <- lapply(X =  tiempos_residuales_edad_maxima, FUN = annuity, i=0.07, m = xi-x, k=12, type="due") %>% unlist()
+    aguinaldo_primer_criterio <- lapply(X =  tiempos_residuales_edad_maxima, FUN = annuity, i=0.07, m = xi-x, k=1, type="immediate") %>% unlist()
     pagos_primer_criterio <- anualidades_primer_criterio + aguinaldo_primer_criterio
   }
   # Se calculan los costos asociados al primer criterio del algoritmo
-  costos_edad_max <- salario_ref_primer_criterio * pagos_primer_criterio
+  costos_edad_maxima <- salario_ref_primer_criterio * pagos_primer_criterio
   
   # SEGUNDO CRITERIO: Decremento antes de jubilación
   
-  if(cant_pensiones_edad_max<cant_simulaciones){# esta condición significa que hay otros escenarios
+  if(cant_pensiones_edad_maxima<cant_simulaciones){# esta condición significa que hay otros escenarios
     
     # Debe determinarse cuándo ocurrió el decremento y cuál fue
     # Primero se determina cuándo ocurrió, es decir, se buscan los cuantiles de la distribución de Wx que corresponden a las simulaciones U(0,1) restantes
@@ -852,7 +852,7 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
     # Se determinan los escenarios en que ocurrió cada decremento
     
     # Primero, se tienen que simular nuevas muestras U(0,1) para los casos que no fueron incluidos en el primer criterio
-    u <- runif(cant_simulaciones-cant_pensiones_edad_max)
+    u <- runif(cant_simulaciones-cant_pensiones_edad_maxima)
     # Se determinan los extramemos de los intervalos de decisión
     extremos_intervalos <-apply(X = probs_condicionales, MARGIN = 1, FUN = cumsum) %>% t()
     
@@ -942,35 +942,65 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
     costos_muerte <- 0.2 * porcentajes_muerte * salarios_ref_muerte * anualidades_muerte
     
   }
-  costo_estocastico <- sum(costos_edad_max, costos_invalidez, costos_jubilacion, costos_muerte)/ cant_simulaciones 
+  costo_estocastico <- sum(costos_edad_maxima, costos_invalidez, costos_jubilacion, costos_muerte)/ cant_simulaciones 
   
   return(costo_estocastico)
 }
 ```
 
-```{r}
-N <- 5000
-t <- proc.time()
-costos_mujeres <- mapply(FUN = costo_afiliado_estocastico,
-                        edad= afil_mujeres$Edad, 
-                                   salario=afil_mujeres$Salario,
-                                   antiguedad=afil_mujeres$Antiguedad,
-                        MoreArgs = list(edad_maxima=77,
-                                        cant_simulaciones=N,                                     
-                                        lista_tablas_decrementos=MDListaDeTablasMujeres,
-                                        lista_tablas_mortalidad=ListaDeTablasMujeres),
-                        SIMPLIFY = "vector")
-costos_hombres <- mapply(FUN = costo_afiliado_estocastico,
-                        edad= afil_hombres$Edad, 
-                                   salario=afil_hombres$Salario,
-                                   antiguedad=afil_hombres$Antiguedad,
-                        MoreArgs = list(edad_maxima=85,
-                                        cant_simulaciones=N,                                     
-                                        lista_tablas_decrementos=MDListaDeTablasHombres,
-                                        lista_tablas_mortalidad=ListaDeTablasHombres),
-                        SIMPLIFY = "vector")
-proc.time()-t
-archivo <- file("Resultados Estocástico por persona 5000.txt")
+```{r Prueba estocástico individual}
+N <- 100
+
+costos_mujeres <- 1:nrow(afil_mujeres)
+for (i in 1:nrow(afil_mujeres)) {
+edad <- afil_mujeres$Edad[i]
+salario <- afil_mujeres$Salario[i]
+antiguedad <-afil_mujeres$Antiguedad[i]
+costos_mujeres[i] <- costo_afiliado_estocastico(edad, 
+                                             salario, 
+                                             77,
+                                             antiguedad, 
+                                             cant_simulaciones = N,
+                                             MDListaDeTablasMujeres, 
+                                             ListaDeTablasMujeres)
+print(i)  
+}
+
+costos_hombres <- 1:nrow(afil_hombres)
+for (i in 1:nrow(afil_hombres)) {
+edad <- afil_hombres$Edad[i]
+salario <- afil_hombres$Salario[i]
+antiguedad <-afil_hombres$Antiguedad[i]
+costos_hombres[i] <- costo_afiliado_estocastico(edad, 
+                                             salario, 
+                                             85,
+                                             antiguedad, 
+                                             cant_simulaciones = N,
+                                             MDListaDeTablasHombres, 
+                                             ListaDeTablasHombres)
+print(i)
+}
+
+# t <- proc.time()
+# costos_mujeres <- mapply(FUN = costo_afiliado_estocastico,
+#                         edad= afil_mujeres$Edad, 
+#                                    salario=afil_mujeres$Salario,
+#                                    antiguedad=afil_mujeres$Antiguedad,
+#                         MoreArgs = list(edad_maxima=77,
+#                                         cant_simulaciones=N,                lista_tablas_decrementos=MDListaDeTablasMujeres,
+#                                         lista_tablas_mortalidad=ListaDeTablasMujeres),
+#                         SIMPLIFY = "vector")
+# costos_hombres <- mapply(FUN = costo_afiliado_estocastico,
+#                         edad= afil_hombres$Edad, 
+#                                    salario=afil_hombres$Salario,
+#                                    antiguedad=afil_hombres$Antiguedad,
+#                         MoreArgs = list(edad_maxima=85,
+#                                         cant_simulaciones=N,                                     
+#                                         lista_tablas_decrementos=MDListaDeTablasHombres,
+#                                         lista_tablas_mortalidad=ListaDeTablasHombres),
+#                         SIMPLIFY = "vector")
+# proc.time()-t
+archivo <- file("Resultados Estocástico por persona 100.txt")
 writeLines(paste("Estocastico:", "Mujeres", sum(costos_mujeres), "Hombres", sum(costos_hombres), sep = " "), archivo)
 close(archivo)
 
