@@ -1538,19 +1538,19 @@ salarios_h <- afil_hombres$Salario
 tasa_descuento <- 0.07
 tasa_crecimiento_r <- 0
 # Por invalidez
-salida_invalidez_h <- DecrementosIV2(edades, TRUE, antiguedades, salarios, tasa_descuento, tasa_crecimiento_r, 1)
+salida_invalidez_h <- DecrementosIV2(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 1)
 
 # Por jubilacion
-salida_jubilacion_h <- DecrementosIV2(edades, TRUE, antiguedades, salarios, tasa_descuento, tasa_crecimiento_r, 2)
+salida_jubilacion_h <- DecrementosIV2(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 2)
 
 # Por muerte
-salida_muerte_h <- DecrementoM2(edades, TRUE, antiguedades, salarios, tasa_descuento, tasa_crecimiento_r)
+salida_muerte_h <- DecrementoM2(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r)
 
 salida_total_hombres <- salida_invalidez_h + salida_jubilacion_h + salida_muerte_h
 
 afil_hombres$Costo_plan <- salida_total_hombres
 ```
-
+37463880
 ```{r}
 edades_m <- afil_mujeres$Edad
 antiguedades_m <- afil_mujeres$Antiguedad
