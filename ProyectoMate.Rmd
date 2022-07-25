@@ -1440,9 +1440,9 @@ DecrementoM2 <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuent
     # Se carga la lista de acuerdo a la edad
     lista <- montos_pension[[edad - min(Edad) + 1]]
     if (n != 0) {
-      n <- min(((85 - i) * hombre + (77 - i) * !hombre), n)
+      n <- min(((85 - edad) * hombre + (77 - edad) * !hombre), n)
     }
-    j <- (0:(((85 - i) * hombre + (77 - i) * !hombre) * (n == 0) + n))
+    j <- (0:(((85 - edad) * hombre + (77 - edad) * !hombre) * (n == 0) + n))
     # Salarios de referencia
     salarios_ref <- unlist(sapply(
       FUN = beneficio, antiguedad = antiguedad,
