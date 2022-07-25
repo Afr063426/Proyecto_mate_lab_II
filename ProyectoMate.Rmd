@@ -301,7 +301,7 @@ beneficio <- function(antiguedad, decremento, salario, k) {
   } else if (decremento == 4) {
     porcentaje_de_salario <- porcentaje_de_pension(antiguedad) * 0.2
   }
-  return(salario_referencia(antiguedad - k, salario, k) * porcentaje_de_salario)
+  return(salario_referencia(antiguedad - k, salario, k) / 12 * porcentaje_de_salario)
 }
 
 
@@ -320,110 +320,6 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 }
 ```
 
-## Escala salarial
-
-```{r}
-# Aqui voy a programar la tabla de escala salarial
-# se debe hacer por sexo y por edad
-# de momentos se calculará el promedio por edad
-# Se estima una función lineal entre los dos puntos que faltan
-# Pensando si hacerlo por splines
-media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Edad), FUN = mean)
-media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Edad), FUN = mean)
-j <- 2
-while (j <= nrow(media_mujeres)) {
-  diferencia <- media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1]
-  if (diferencia != 1) {
-    m <- (media_mujeres$x[j] - media_mujeres$x[j - 1]) /
-      (media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1])
-    b <- media_mujeres$x[j] - m * media_mujeres$Group.1[j]
-    edad_faltantes <- media_mujeres$Group.1[j - 1] + (1:(diferencia - 1))
-    montos <- m * edad_faltantes + b
-    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
-    media_mujeres <- rbind(media_mujeres[1:j - 1, ], faltantes, media_mujeres[j:nrow(media_mujeres), ])
-  }
-  j <- j + 1
-}
-j <- 2
-while (j <= nrow(media_hombres)) {
-  diferencia <- media_hombres$Group.1[j] - media_hombres$Group.1[j - 1]
-  if (diferencia != 1) {
-    m <- (media_hombres$x[j] - media_hombres$x[j - 1]) /
-      (media_hombres$Group.1[j] - media_hombres$Group.1[j - 1])
-    b <- media_hombres$x[j] - m * media_hombres$Group.1[j]
-    edad_faltantes <- media_hombres$Group.1[j - 1] + (1:(diferencia - 1))
-    montos <- m * edad_faltantes + b
-    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
-    media_hombres <- rbind(media_hombres[1:j - 1, ], faltantes, media_hombres[j:nrow(media_hombres), ])
-  }
-  j <- j + 1
-}
-# Mujeres
-edad_m <- max(media_mujeres$Group.1)
-sal_m <- rep(max(media_mujeres$x), 85 - edad_m)
-sal_m <- data.frame(Group.1 = c((edad_m + 1):85, 18), x = c(sal_m, media_mujeres$x[1]))
-media_mujeres %<>% rbind(sal_m)
-
-# Hombres
-edad_h <- max(media_hombres$Group.1)
-sal_h <- rep(max(media_hombres$x), 85 - edad_h)
-sal_h <- data.frame(Group.1 = (edad_h + 1):85, x = sal_h)
-media_hombres %<>% rbind(sal_h)
-
-# Ordenamiento
-media_mujeres <- media_mujeres[order(media_mujeres$Group.1), ]
-media_hombres <- media_hombres[order(media_hombres$Group.1), ]
-
-# Unificacion
-escala <- data.frame(Edad = 18:85, Hombres = media_hombres$x, Mujeres = media_mujeres$x)
-min_m <- escala$Mujeres[1]
-min_h <- escala$Hombres[1]
-escala %<>% mutate(Hombres = Hombres / min_h, Mujeres = Mujeres / min_m)
-write.csv(escala, "./Escala_edad.csv", row.names = FALSE)
-```
-
-
-## Caso por antigüedad 
-
-```{r}
-media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Antiguedad), FUN = mean)
-media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Antiguedad), FUN = mean)
-j <- 2
-while (j <= nrow(media_mujeres)) {
-  diferencia <- media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1]
-  if (diferencia != 1) {
-    m <- (media_mujeres$x[j] - media_mujeres$x[j - 1]) /
-      (media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1])
-    b <- media_mujeres$x[j] - m * media_mujeres$Group.1[j]
-    edad_faltantes <- media_mujeres$Group.1[j - 1] + (1:(diferencia - 1))
-    montos <- m * edad_faltantes + b
-    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
-    media_mujeres <- rbind(media_mujeres[1:j - 1, ], faltantes, media_mujeres[j:nrow(media_mujeres), ])
-  }
-  j <- j + 1
-}
-j <- 2
-while (j <= nrow(media_hombres)) {
-  diferencia <- media_hombres$Group.1[j] - media_hombres$Group.1[j - 1]
-  if (diferencia != 1) {
-    m <- (media_hombres$x[j] - media_hombres$x[j - 1]) /
-      (media_hombres$Group.1[j] - media_hombres$Group.1[j - 1])
-    b <- media_hombres$x[j] - m * media_hombres$Group.1[j]
-    edad_faltantes <- media_hombres$Group.1[j - 1] + (1:(diferencia - 1))
-    montos <- m * edad_faltantes + b
-    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
-    media_hombres <- rbind(media_hombres[1:j - 1, ], faltantes, media_hombres[j:nrow(media_hombres), ])
-  }
-  j <- j + 1
-}
-
-media_mujeres <- rbind(media_mujeres, data.frame(Group.1 = c(45, 46), x = rep(media_mujeres$x[nrow(media_mujeres)])))
-escala_antiguedad <- data.frame(Antiguedad = 0:46, Hombres = media_hombres$x, Mujeres = media_mujeres$x)
-min_h <- escala_antiguedad$Hombres[1]
-min_m <- escala_antiguedad$Mujeres[1]
-escala_antiguedad %<>% mutate(Hombres = Hombres / min_h, Mujeres = Mujeres / min_m)
-write.csv(escala_antiguedad, "./Escala_antiguedad.csv", row.names = FALSE)
-```
 
 
 # Estadistica
@@ -1234,7 +1130,7 @@ beneficio <- function(antiguedad, decremento, salario, k) {
   } else if (decremento == 4) {
     porcentaje_de_salario <- porcentaje_de_pension(antiguedad) * 0.2
   }
-  return(salario_referencia(antiguedad, salario, k) * porcentaje_de_salario)
+  return(salario_referencia(antiguedad, salario, k) * porcentaje_de_salario / 12)
 }
 
 
@@ -1349,39 +1245,38 @@ Funciones a utilizar
 
 ## Funcion decremento IV
 ```{r}
-DecrementosIV <-
-  function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento) {
-    v <- (1) / (1 + tasa_descuento)
+DecrementosIV <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento) {
+  v <- (1) / (1 + tasa_descuento)
 
-    # La funcion beneficio aun no ha sido definida
-    vectoraguinaldo <- c(rep(0, 10), 1, 0)
-    PV <- 0
-    if (hombre) {
-      for (k in 0:(115 - Edad)) {
-        vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
-        vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
-        MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
-
-
-        anualidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
-        suma1 <- sum(anualidad * MontoAPagar)
-        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
-      }
-    } else {
-      for (k in 0:(115 - Edad)) {
-        vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
-        vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
-        MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+  # La funcion beneficio aun no ha sido definida
+  vectoraguinaldo <- c(rep(0, 10), 1, 0)
+  PV <- 0
+  if (hombre) {
+    for (k in 0:(115 - Edad)) {
+      vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
+      vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
+      MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
 
 
-        anualidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
-        suma1 <- sum(anualidad * MontoAPagar)
-
-        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
-      }
+      anualidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
+      suma1 <- sum(anualidad * MontoAPagar)
+      PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
     }
-    return(PV)
+  } else {
+    for (k in 0:(115 - Edad)) {
+      vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
+      vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
+      MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+
+
+      anualidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
+      suma1 <- sum(anualidad * MontoAPagar)
+
+      PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
+    }
   }
+  return(PV)
+}
 ```
 
 
@@ -1392,66 +1287,87 @@ DecrementosIV2 <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descue
   montos_pension <- list()
   v <- (1) / (1 + tasa_descuento)
   edades <- min(Edad):max(Edad)
+  print(edades)
   # La funcion beneficio aun no ha sido definida
   vectoraguinaldo <- c(rep(0, 10), 1, 0)
-  PV <- 0
   for (i in edades) {
-    # Tamaño del vector y posiciones
-    j <- length(0:(115 - i))
+    # Tamaño del vector y posiciones, se va pasar como k
+    j <- (0:(115 - i))
 
-    # Vector donde se van guardando los valores sin tener en cuenta el monto de beneficio
-    PV <- numeric()
-
+    # Vector donde se van guardando los valores sin tener en cuenta el monto de beneficio, esto ya que se le multiplicará a cada individuo
+    # PV_aux <- numeric(length(j))
     # Funcion para estimar cada entrada del PV,  que corresponden
     # a cada uno
-    funcion_auxiliar <- function(k) {
-      # Vector al que se eleva el v
-      vectorMensual <- (seq(1 / 12, (115 - i + 1 - k), 1 / 12))
+    funcion_pv <- function(k) {
+      PV_aux <- 0
+      if (hombre) {
+        # Vector al que se eleva el v
 
-      # Vector para controlar la inflacion
-      vectorAnualmensual <- sort(rep(c(0:(115 - i - k)), 12))
+        vectorMensual <- (seq(1 / 12, (115 - i + 1 - k), 1 / 12))
 
-      # Vector que contiene los montontos a pagar esto es los montos ajustados por inflacion y multiplicados
-      # por si se debería calcular el aguinaldo
-      MontoAPagar <- (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+        # Vector para controlar la inflacion
+        vectorAnualmensual <- sort(rep(c(0:(115 - i - k)), 12))
 
-      # Vector multiplicando las probabilidad de sobrevivencia es decir tpx*v^t/m
-      anualidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = i + k, t = vectorMensual) * (v)^(vectorMensual)
+        # Vector que contiene los montontos a pagar esto es los montos ajustados por inflacion y multiplicados
+        # por si se debería calcular el aguinaldo
+        MontoAPagar <- (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
 
-      # Suma total del
-      suma1 <- sum(anualidad * MontoAPagar)
-      PV[k + 1] <- suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
-    }
+        # Vector multiplicando las probabilidad de sobrevivencia es decir tpx*v^t/m
+        anualidad <- pxt(ListaDeTablasHombres[[(i + 1)]], x = i + k, t = vectorMensual) * (v)^(vectorMensual)
 
-
-    if (hombre) {
-      for (k in 0:(115 - Edad)) {
-        vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
-        vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
-        MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
-
-
-        anualidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
+        # Multiplicando ambos
         suma1 <- sum(anualidad * MontoAPagar)
-        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
-      }
-    } else {
-      for (k in 0:(115 - Edad)) {
-        vectorMensual <- (seq(1 / 12, (115 - Edad + 1 - k), 1 / 12))
-        vectorAnualmensual <- sort(rep(c(0:(115 - Edad - k)), 12))
-        MontoAPagar <- beneficio(antiguedad, decremento, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+        PV_aux <- suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[i + 1]], x = i, t = k) * qxt(MDListaDeTablasHombres[[i + 1]], x = i + k, t = 1, decrement = decremento)
+      } else {
+        # Vector al que se eleva el v
 
+        vectorMensual <- (seq(1 / 12, (115 - i + 1 - k), 1 / 12))
 
-        anualidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = Edad + k, t = vectorMensual) * (v)^(vectorMensual)
+        # Vector para controlar la inflacion
+        vectorAnualmensual <- sort(rep(c(0:(115 - i - k)), 12))
+
+        # Vector que contiene los montontos a pagar esto es los montos ajustados por inflacion y multiplicados
+        # por si se debería calcular el aguinaldo
+        MontoAPagar <- (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+
+        # Vector multiplicando las probabilidad de sobrevivencia es decir tpx*v^t/m
+        anualidad <- pxt(ListaDeTablasMujeres[[(i + 1)]], x = i + k, t = vectorMensual) * (v)^(vectorMensual)
+
+        # Multiplicando ambos
         suma1 <- sum(anualidad * MontoAPagar)
-
-        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad, t = k) * qxt(MDListaDeTablasMujeres[[Edad + 1]], x = Edad + k, t = 1, decrement = decremento)
+        PV_aux <- suma1 * v^(k + 1) * pxt(MDListaDeTablasMujeres[[i + 1]], x = i, t = k) * qxt(MDListaDeTablasMujeres[[i + 1]], x = i + k, t = 1, decrement = decremento)
       }
+      return(PV_aux)
     }
+    montos_pension[[i - min(Edad) + 1]] <- future_sapply(FUN = funcion_pv, X = j)
   }
 
+  # Se procede a programar una funcion la cual permite estimar el valor de los individuos
+  costo_individuo <- function(edad, antiguedad, ultimo_salario) {
+    # Se carga la lista de acuerdo a la edad
+    lista <- montos_pension[[edad - min(Edad) + 1]]
+    j <- 0:(115 - edad)
+    # Salarios de referencia
+    salarios_ref <- unlist(sapply(
+      FUN = beneficio, antiguedad = antiguedad,
+      decremento = decremento, salario = ultimo_salario, X = j
+    ))
+    # print(paste(salarios_ref, lista))
+    # Se regresa el monto total de los beneficios otorgados
+    return(sum(salarios_ref * lista))
+  }
+  PV <- unlist(future_mapply(FUN = costo_individuo, edad = Edad, antiguedad = antiguedad, ultimo_salario = ultimo_salario))
   return(PV)
 }
+# ```
+```
+
+
+
+```{r}
+# Prueba de ambas funciones con el primer individuo
+# DecrementosIV(afil_hombres$Edad[1], TRUE, afil_hombres$Antiguedad[1], afil_hombres$Salario[1], 0.07, 0, 1)
+DecrementosIV2(afil_mujeres$Edad, FALSE, afil_mujeres$Antiguedad, afil_mujeres$Salario, 0.07, 0, 1)
 ```
 
 
