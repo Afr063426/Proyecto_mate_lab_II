@@ -1189,15 +1189,10 @@ close(fileConn)
 ```
 
 
-# Deterministico
-
-
-
-
+# Modelos Deterministicos
 
 
 ## Personas ya pensionadas
-
 
 ```{r}
 # hombres
@@ -1231,34 +1226,12 @@ PensionMensualDeterministico <-
     suma <- sum(suma)
     return(suma)
   }
-
-# calculo de pension para hombres pensionados
-MontoDePensionMensualParaHombresDeterministicoPensionados <-
-  mapply(
-    PensionMensualDeterministico,
-    pen_hombres$Edad,
-    TRUE,
-    pen_hombres$MON_PEN,
-    0.07
-  )
-
-sum(MontoDePensionMensualParaHombresDeterministicoPensionados)
-
-# calculo de pension para mujeres pensionados
-MontoDePensionMensualParaMujeresDeterministicoPensionados <-
-  mapply(
-    PensionMensualDeterministico,
-    pen_mujeres$Edad,
-    FALSE,
-    pen_mujeres$MON_PEN,
-    0.07
-  )
-sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
 ```
 
+## Calculo para las pensiones de los ya pensionados
 
 ```{r}
-# calculo de pension para hombres pensionados
+# calculo de pensión para hombres pensionados
 MontoDePensionMensualParaHombresDeterministicoPensionados <-
   mapply(
     PensionMensualDeterministico,
@@ -1267,11 +1240,9 @@ MontoDePensionMensualParaHombresDeterministicoPensionados <-
     pen_hombres$MON_PEN,
     0.07
   )
-
 sum(MontoDePensionMensualParaHombresDeterministicoPensionados)
 
-
-# calculo de pension para mujeres pensionados
+# calculo de pensión para mujeres pensionados
 MontoDePensionMensualParaMujeresDeterministicoPensionados <-
   mapply(
     PensionMensualDeterministico,
@@ -1282,12 +1253,14 @@ MontoDePensionMensualParaMujeresDeterministicoPensionados <-
   )
 sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
 ```
+
+
 
 ## Personal activo
 Deterministico para no pensionadas
 Funciones a utilizar
 
-## Funcion decremento IV
+### Funcion decremento Invalidez y Vejez
 
 ```{r}
 # Optimizacion de la funcion
