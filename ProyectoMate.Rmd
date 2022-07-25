@@ -1523,8 +1523,6 @@ cotizacionfutura <-
           pxt1(MDListaDeTablasMujeres[[(77 - Edad)]], x = (77 - Edad), t = 1)
       }  
     }
-
->>>>>>> Daniel
 ```
 
 
