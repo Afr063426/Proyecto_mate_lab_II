@@ -1398,9 +1398,9 @@ sum(salida_total_mujeres[posiciones46 ])
 
 ```{r Prueba estocástico por grupo etario}
 set.seed(10)
-N <- 10000
+N <- 100000
 t <- proc.time()
-# Costo hombres (Joshua)
+# Costo hombres (Leonardo)
 i<-1
 costos_grupal_estoc_h <- matrix(0, nrow = length(unique(afil_hombres$Edad)), ncol=4)
 for (edad in unique(sort(afil_hombres$Edad))) {
@@ -1418,9 +1418,9 @@ costos_grupal_estoc_h <- as.data.frame(costos_grupal_estoc_h)
 colnames(costos_grupal_estoc_h) <- c("Invalidez", "Jubilación", "Muerte", "Total")
 write.csv(costos_grupal_estoc_h,"Costos estocástico hombres por grupo etario.csv", row.names = FALSE)
 
-# Costo mujeres (Moisés)
+# Costo mujeres (Joshua)
 
-N <- 10000
+N <- 100000
 costos_grupal_estoc_m <- matrix(NA, nrow = length(unique(afil_mujeres$Edad)), ncol=4)
 i<-1
 t <- proc.time()
