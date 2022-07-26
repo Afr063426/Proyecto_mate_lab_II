@@ -349,56 +349,8 @@ salario_referencia <- function(antiguedad, salario, k){
 
 
 
-
-# Funcion para determinar pension de personas ya pensionadas
-
-```{r}
-pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
-  v <- 1 / (1 + t_descuento)
-  # aumento<-(1+0.03)*(1+aumento_real)
-  edades <- base_de_datos$Edad
-  montos <- base_de_datos$MON_PEN
-  fn2 <- function(edad, monto) {
-    # print("Hola")
-    Edad <- edad
-    suma <- 0
-    simulacion <- simulaciones
-    # monto<-monto*(v*aumento)^(max(jubilacion-Edad,0)) en este caso si se descomenta se calcula para los ya pensionados
-    # monto<-monto
-    ajuste <- 1
-    j <- 1 / m
-    i <- 1
-    while (simulacion > 0) {
-      if (sex) {
-        probabilidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = edad, t = 1 / m)
-      } else {
-        probabilidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = edad, t = 1 / m)
-      }
-      vivos <- sum(rbinom(n = simulacion, size = 1, prob = probabilidad))
-      simulacion <- vivos
-      edad <- edad + 1 / m
-      suma <- suma + v^j * ajuste * vivos * 2^(i == 11)
-      ajuste <- ajuste * (1 + inflacion)^(i == 12)
-      j <- j + 1 / m
-      i <- (1 + i) * (i < 12) + 1 * (i == 12)
-    }
-    return(monto * suma / simulaciones)
-  }
-  valores <- unlist(future_mapply(FUN = fn2, edad = edades, monto = montos, SIMPLIFY = FALSE))
-  return(sum(valores))
-}
-```
-
 ## Calculo de pension estocastico
 
-```{r}
-(pension_pen_m <- pension_pen(pen_mujeres, FALSE, 0.07, 12, 1000))
-(pension_pen_h <- pension_pen(pen_hombres, TRUE, 0.07, 12, 1000))
-
-fileConn <- file("output.txt")
-writeLines(paste("Estocastico:", "Mujeres", pension_pen_m, "Hombres", pension_pen_h, sep = " "), fileConn)
-close(fileConn)
-```
 
 
 # Modelos Deterministicos
@@ -670,83 +622,31 @@ sum(afil_mujeres$Costo_plan)
 
 
 
-```{r}
-# Ideas para eleboración de la función
-# Aqui se programara lo necesario para poder estimar los costos de liquidacion
-# Se toma solo aquellas personas que tengan menos de 22 años
-# Hay que pagar un 1.5% de los salarios que haya recibido
-# Se deberia estimar un pago que se debe hacer dentro de dos años
-
-liquidacion <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_real, porcentaje_aporte, sexo) {
-  if (antiguedad + 2 <= 22) {
-    v <- 1 / (1 + i)
-    # Para estimar el aumento que se le hizo al salario inicial hasta el momento
-    aumento <- (1 + inflacion) * (1 + aumento_real)
-
-    # Salario con el que se inició
-    salario_inicial <- salario_actual * (aumento)^(-antiguedad) * porcentaje_aporte
-
-    # Salarios que han sido pagados para el momento de la liquidación
-    salarios <- salario_inicial * aumento^(0:(antiguedad + 2))
-    salarios <- sort(rep(salarios, 12))
-    # Se crea un vector con 12 salarios de cada año
-    descontado <- v^seq(1 / 12, antiguedad + 3, 1 / 12) * (1 + i)^(antiguedad + 1)
-
-    # Se multiplica el descontado con los salarios pagados
-    monto <- sum(salarios * descontado)
-    if (sexo == "F") {
-      p <- pxt1(MDListaDeTablasMujeres[[edad + 1]], x = edad, t = 2)
-    } else if (sexo == "M") {
-      p <- pxt1(MDListaDeTablasHombres[[edad + 1]], x = edad, t = 2)
-    }
-    return(monto * p)
-  } else {
-    return(0)
-  }
-}
-
-attach(afil_hombres)
-afil_hombres$Liquidacion <- unlist(future_mapply(
-  FUN = liquidacion, edad = Edad,
-  salario_actual = Salario, antiguedad = Antiguedad,
-  i = interes, inflacion = inflacion, aumento_real,
-  porcentaje_aporte = porcentaje_aporte, sexo = "M"
-))
-attach(afil_mujeres)
-afil_mujeres$Liquidacion <- unlist(future_mapply(
-  FUN = liquidacion, edad = Edad,
-  salario_actual = Salario, antiguedad = Antiguedad,
-  i = interes, inflacion = inflacion, aumento_real,
-  porcentaje_aporte = porcentaje_aporte, sexo = "F"
-))
-```
-
-
-
-
-
 
 
 ## Cotización futura
 ```{r}
 cotizacionfutura <-
-  function(Edad, hombre, ultimo_salario, porcentaje_aporte=1) {
+  function(Edad, hombre, ultimo_salario, t,porcentaje_aporte=1) {
     v <- (1) / (1 + 0.07 )
+    t<-min(85,t)
     if (hombre) {
-      salariosfuturos<-ultimo_salario * ((1 + 0.04)*(1+0.025))^(1:(85-Edad))*12*
-        pxt1(MDListaDeTablasHombres[[Edad+1]], x = Edad, t = (1:(85-Edad)))* v^(0:(85-Edad-1))
+      t<-min(85-Edad,t)
+      salariosfuturos<-ultimo_salario * ((1 + 0.04)*(1+0.025))^(1:(t))*12*
+        pxt1(MDListaDeTablasHombres[[Edad+1]], x = Edad, t = (1:t))* v^(0:(t-1))
         return(salariosfuturos*porcentaje_aporte)
       } else {
-      salariosfuturos<-ultimo_salario * ((1 + 0.04)*(1+0.025))^(1:(77-Edad))*12*
-        pxt1(MDListaDeTablasMujeres[[Edad+1]], x = Edad, t = (1:(77-Edad)))* v^(0:(77-Edad-1))
+        t<-min(77-Edad,t)
+      salariosfuturos<-ultimo_salario * ((1 + 0.04)*(1+0.025))^(1:(t))*12*
+        pxt1(MDListaDeTablasMujeres[[Edad+1]], x = Edad, t = (1:t))* v^(0:(t-1))
         return(salariosfuturos*porcentaje_aporte)
       }  
     }
 
 
-SalariosM<-mapply( cotizacionfutura,  afil_mujeres$Edad, FALSE, afil_mujeres$Salario)
-SalariosH<-mapply( cotizacionfutura,  afil_hombres$Edad, TRUE, afil_hombres$Salario)
-
+SalariosM<-mapply( cotizacionfutura,  afil_mujeres$Edad, FALSE, afil_mujeres$Salario,2)
+SalariosH<-mapply( cotizacionfutura,  afil_hombres$Edad, TRUE, afil_hombres$Salario,2)
+sum(unlist(SalariosM))+sum(unlist(SalariosH))
 
 pi<-(sum(afil_mujeres$Costo_plan)+sum(afil_hombres$Costo_plan))/(sum(unlist(SalariosM))+sum(unlist(SalariosH)))
 
