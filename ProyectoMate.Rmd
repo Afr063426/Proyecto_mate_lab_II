@@ -952,7 +952,7 @@ costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima,
     costos_totales_jubilacion +
     costos_totales_muerte
 
-  return(c(costos_totales_invalidez + costos_totales_edad_maxima, costos_totales_jubilacion, costos_totales_muerte, costos_totales ))
+  return(c(costos_totales_invalidez, costos_totales_jubilacion + costos_totales_edad_maxima, costos_totales_muerte, costos_totales ))
 }
 ```
 
@@ -974,7 +974,7 @@ costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima,
 ```
 
 ```{r Prueba estocástico por grupo etario}
-set.seed(10)
+# set.seed(10)
 # N <- 10000
 # t <- proc.time()
 # # Costo hombres (Leonardo)
@@ -996,7 +996,7 @@ set.seed(10)
 # write.csv(costos_grupal_estoc_h,"Costos estocástico hombres por grupo etario.csv", row.names = FALSE)
 
 # Costo mujeres (Joshua)
-
+# 
 N <- 10000
 costos_grupal_estoc_m <- matrix(NA, nrow = length(unique(afil_mujeres$Edad)), ncol=4)
 i<-1
