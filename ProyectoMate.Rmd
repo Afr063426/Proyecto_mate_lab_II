@@ -688,7 +688,7 @@ SalariosM<-mapply( cotizacionfutura,  afil_mujeres$Edad, FALSE, afil_mujeres$Sal
 SalariosH<-mapply( cotizacionfutura,  afil_hombres$Edad, TRUE, afil_hombres$Salario)
 sum(unlist(SalariosM))+sum(unlist(SalariosH))
 
-pi<-(sum(afil_mujeres$Costo_plan)+sum(afil_hombres$Costo_plan))/(sum(unlist(SalariosM))+sum(unlist(SalariosH)))
+pi<-(sum(afil_mujeres$Costo_plan)+sum(afil_hombres$Costo_plan) +70993242384.84)/(sum(unlist(SalariosM))+sum(unlist(SalariosH)))
 
 pi
 
