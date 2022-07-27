@@ -19,7 +19,7 @@ library(xtable)
 library(stringr)
 library(magrittr) # uso de %<>% con funciones de dplyr
 
-
+library(formattable)
 # Para paralelizar
 library(future.apply)
 plan(multicore)
@@ -504,14 +504,14 @@ hallar_cuantil <- function(distribucion, p) {
 valor_anualidad <- function(k, t, v=1/1.07) {
     if(t==0){t=1}
     vectorMensual <- seq(1 / 12, t, 1 / 12)
-    vectoraguinaldo <- c(rep(0, 10), 1, 0)
+    vectoraguinaldo <-c(rep(0, 10), 1, 0)
     vectorAnualmensual <- sort(rep(c(0:(t-1)), 12))
     MontoAPagar <- (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
     anualidad <- (v)^(vectorMensual)
     suma1 <- sum(anualidad * MontoAPagar)
     PV_aux <- suma1 * v^(k + 1)
     return(PV_aux)
-  }
+}
 ```
 
 Para calcular los costos asociados a las personas afiliadas al plan ofrecido por la Compañía, se implementa una modificación de uno de los algortimos descritos en Bacinello (1988) bajo un modelo de múltiples decrementos. El mencionado algoritmo permite simular la variable aleatoria $W_{x}$ del tiempo (en años) de trabajo residual de un empleado activo de edad $(x)$. En esencia, el método proporciona un criterio para, en un primer paso y dada una muestra de una distribución $\mathcal{U}(0,1)$, decidir si una persona de edad $(x)$ se llega a jubilar obligatoriamente, en cuyo caso resta solamente simular su tiempo de vida residual. En su defecto, el algoritmo proporciona una regla para asignar, de acuerdo a una segunda muestra de una distribución $\mathcal{U}(0,1)$, cuál de los decrementos restantes sucedió para que no se llegara a la edad máxima de jubilación. Como puede comprobarse, el método requiere a lo sumo dos muestras provenientes de una distribución $\mathcal{U}(0,1)$ en aras de obtener una muestra de $W_{x}$.
@@ -532,6 +532,12 @@ Asimismo, esta función retorna un valor numérico correspondiente al cálculo d
 
 ```{r Modelo estocástico individual}
 
+x <- afil_mujeres$Edad[i]
+edad_maxima <- 77
+salario <- afil_mujeres$Salario[i]
+antiguedad <-afil_mujeres$Antiguedad[i]
+cant_simulaciones <- 1000
+
 costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, cant_simulaciones, lista_tablas_decrementos, lista_tablas_mortalidad) {
   x <- edad
   xi <- edad_maxima
@@ -549,7 +555,7 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
     # Se calcula el salario de referencia en este caso
     salario_ref_edad_maxima <- salario_referencia(antiguedad, salario, xi-x)
     # Se simulan los tiempos residuales de vida (en años) para los pensionados de edad máxima (xi)
-    tiempos_residuales_edad_maxima <- rLife(n=cant_pensiones_edad_maxima, object = q4_prima, x=xi, k = 1, type = "curtate")
+    tiempos_residuales_edad_maxima <- rLife(n=cant_pensiones_edad_maxima, object = q4_prima, x=xi+1, k = 1, type = "curtate")
     # Se calculan las anualidades mensuales
     pagos_edad_maxima <- sapply(X=tiempos_residuales_edad_maxima, FUN=valor_anualidad, k=xi-x)/12 
     # Se calculan los costos asociados al primer criterio del algoritmo
@@ -592,7 +598,7 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
       # Se guarda la cantidad de años tras los cuáles ocurrió el decremento
       tiempos_hasta_invalidez <- cuantiles[posiciones_invalidez]
       # Se simulan los tiempos residuales de vida
-      tiempos_residuales_invalidez <- lapply(X = x+tiempos_hasta_invalidez, FUN = rLife, n=1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
+      tiempos_residuales_invalidez <- lapply(X = x+tiempos_hasta_invalidez+1, FUN = rLife, n=1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
       
       # Se calculan las anualidades correspondientes
       pagos_invalidez <- mapply(FUN=valor_anualidad, k=tiempos_hasta_invalidez, t=tiempos_residuales_invalidez)/12
@@ -617,7 +623,7 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
       tiempos_hasta_jubilacion <- cuantiles[posiciones_jubilacion] 
       
       # Se simulan los tiempos residuales de vida
-      tiempos_residuales_jubilacion <- lapply(X = x+tiempos_hasta_jubilacion, FUN = rLife, n=1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
+      tiempos_residuales_jubilacion <- lapply(X = x+tiempos_hasta_jubilacion+1, FUN = rLife, n=1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
       # Se calculan las anualidades correspondientes
       pagos_jubilacion <- mapply(FUN=valor_anualidad, k=tiempos_hasta_jubilacion, t=tiempos_residuales_jubilacion)/12
       # Se calculan los salarios de referencia en este caso
@@ -666,31 +672,31 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
 ```
 
 ```{r Pruebas estocástico individual}
-# set.seed(10)
-# N <- 10000
-# 
 # # MUJERES INDIVIDUAL (Leonardo)
-# 
+# set.seed(10)
+# N <- 500
+# costos_individual_estoc_m <- matrix(0, nrow = nrow(afil_mujeres), ncol=4)
 # t <- proc.time()
-# costos_mujeres <- 1:nrow(afil_mujeres)
+# i <-1
 # for (i in 1:nrow(afil_mujeres)) {
 # edad <- afil_mujeres$Edad[i]
 # salario <- afil_mujeres$Salario[i]
 # antiguedad <-afil_mujeres$Antiguedad[i]
-# costos_mujeres[i] <- costo_afiliado_estocastico(edad, 
-#                                              salario, 
+# costos_individual_estoc_m[i,]<- costo_afiliado_estocastico(edad,
+#                                              salario,
 #                                              77,
-#                                              antiguedad, 
+#                                              antiguedad,
 #                                              cant_simulaciones = N,
-#                                              MDListaDeTablasMujeres, 
+#                                              MDListaDeTablasMujeres,
 #                                              ListaDeTablasMujeres)
-# print(i)  
+# print(i)
 # }
 # proc.time()-t
-# archivo <- file("Resultados estocástico individual Mujeres 10000.txt")
-# writeLines(paste("Estocastico:", "Mujeres", sum(costos_mujeres)), archivo)
-# close(archivo)
-# 
+# costos_individual_estoc_m <- as.data.frame(costos_grupal_estoc_m)
+# colnames(costos_grupal_estoc_m) <- c("Invalidez", "Jubilación", "Muerte", "Total")
+# write.csv(costos_individual_estoc_m,"Costos estocástico mujeres individual.csv", row.names = FALSE)
+
+
 # # HOMBRES INDIVIDUAL (Daniel)
 # t <- proc.time()
 # costos_hombres <- 1:nrow(afil_hombres)
@@ -757,7 +763,7 @@ costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima,
     costos_totales_edad_maxima <- 0
   } else {
     # Se simulan los tiempos residuales de vida (en años) para los pensionados de edad máxima (xi)
-    tiempos_residuales_edad_maxima <- rLife(n = cant_pensiones_edad_maxima, object = q4_prima, x = xi, k = 1, type = "curtate")
+    tiempos_residuales_edad_maxima <- rLife(n = cant_pensiones_edad_maxima, object = q4_prima, x = xi+1, k = 1, type = "curtate")
     # Se calculan las anualidades mensuales
     pagos_edad_maxima <- sapply(X=tiempos_residuales_edad_maxima, FUN=valor_anualidad, k=xi-x)/12
     # Se calcula la matriz de salarios
@@ -821,7 +827,7 @@ costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima,
       # Se guarda la cantidad de años tras los cuáles ocurrió el decremento
       tiempos_hasta_invalidez <- cuantiles[posiciones_invalidez]
       # Se simulan los tiempos residuales de vida
-      tiempos_residuales_invalidez <- lapply(X = x + tiempos_hasta_invalidez, FUN = rLife, n = 1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
+      tiempos_residuales_invalidez <- lapply(X = x + tiempos_hasta_invalidez+1, FUN = rLife, n = 1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
       
       # Se calculan las anualidades correspondientes
      
@@ -867,7 +873,7 @@ costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima,
       tiempos_hasta_jubilacion <- cuantiles[posiciones_jubilacion]
       
       # Se simulan los tiempos residuales de vida
-      tiempos_residuales_jubilacion <- lapply(X = x + tiempos_hasta_jubilacion, FUN = rLife, n = 1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
+      tiempos_residuales_jubilacion <- lapply(X = x + tiempos_hasta_jubilacion+1, FUN = rLife, n = 1, object = q4_prima, k = 1, type = "curtate") %>% unlist()
       
       # Se calculan las anualidades correspondientes
       pagos_jubilacion <- mapply(FUN=valor_anualidad, k=tiempos_hasta_jubilacion, t=tiempos_residuales_jubilacion)/12
@@ -974,27 +980,26 @@ costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima,
 ```
 
 ```{r Prueba estocástico por grupo etario}
-# set.seed(10)
-# N <- 10000
-# t <- proc.time()
-# # Costo hombres (Leonardo)
-# i<-1
-# costos_grupal_estoc_h <- matrix(0, nrow = length(unique(afil_hombres$Edad)), ncol=4)
-# for (edad in unique(sort(afil_hombres$Edad))) {
-# print(paste("Hombres de ", edad, "años"))
-# 
-# datos <- afil_hombres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
-# salarios <- datos$Salario
-# antiguedades <- datos$Antiguedad
-# costos_grupal_estoc_h[i,] <- costo_afiliado_estocastico_grupo_etario(edad, salarios, 85, antiguedades, N, MDListaDeTablasHombres, ListaDeTablasHombres)
-# print(costos_grupal_estoc_h[i,4])
-# i <- i+1
-# }
-# proc.time()-t
-# costos_grupal_estoc_h <- as.data.frame(costos_grupal_estoc_h)
-# colnames(costos_grupal_estoc_h) <- c("Invalidez", "Jubilación", "Muerte", "Total")
-# write.csv(costos_grupal_estoc_h,"Costos estocástico hombres por grupo etario.csv", row.names = FALSE)
+set.seed(10)
+N <- 10000
+t <- proc.time()
+# Costo hombres (Leonardo)
+i<-1
+costos_grupal_estoc_h <- matrix(0, nrow = length(unique(afil_hombres$Edad)), ncol=4)
+for (edad in unique(sort(afil_hombres$Edad))) {
+print(paste("Hombres de ", edad, "años"))
+datos <- afil_hombres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
+salarios <- datos$Salario
+antiguedades <- datos$Antiguedad
+costos_grupal_estoc_h[i,] <- costo_afiliado_estocastico_grupo_etario(edad, salarios, 85, antiguedades, N, MDListaDeTablasHombres, ListaDeTablasHombres)
+print(costos_grupal_estoc_h[i,4])
+i <- i+1
+}
+proc.time()-t
+colnames(costos_grupal_estoc_h) <- c("Invalidez", "Jubilación", "Muerte", "Total")
+write.csv(costos_grupal_estoc_h,"Costos estocástico hombres por grupo etario.csv", row.names = FALSE)
 
+comma(apply(X=costos_grupal_estoc_h, MARGIN=2, FUN=sum))
 # Costo mujeres (Joshua)
 # 
 N <- 10000
@@ -1011,8 +1016,24 @@ print(costos_grupal_estoc_m[i,4])
 i <- i+1
 }
 proc.time()-t
-costos_grupal_estoc_h <- as.data.frame(costos_grupal_estoc_m)
-colnames(costos_grupal_estoc_h) <- c("Invalidez", "Jubilación", "Muerte", "Total")
-write.csv(costos_grupal_estoc_h,"Costos estocástico mujeres por grupo etario.csv", row.names = FALSE)
+colnames(costos_grupal_estoc_m) <- c("Invalidez", "Jubilación", "Muerte", "Total")
+write.csv(costos_grupal_estoc_m,"Costos estocástico mujeres por grupo etario.csv", row.names = FALSE)
+ 
+comma(apply(X=costos_grupal_estoc_m, MARGIN=2, FUN=sum))
+
+comma(apply(X=costos_grupal_estoc_m, MARGIN=2, FUN=sum))+
+comma(apply(X=costos_grupal_estoc_h, MARGIN=2, FUN=sum))
+
+
+comma( comma(apply(X=costos_grupal_estoc_m, MARGIN=2, FUN=sum))[4]+
+comma(apply(X=costos_grupal_estoc_h, MARGIN=2, FUN=sum))[4]+ 71007665316.293 )
+
+# Err rel hombres
+abs(293890129722.64-292807651363.28)/292807651363.28
+# Err rel mujeres
+abs(420521887316.16-424632902586.31)/424632902586.31
+# Err abs total
+
+abs(714412017038.80-717440553949.59)/717440553949.59
 
 ```
