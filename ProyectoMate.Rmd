@@ -2,10 +2,13 @@
 title: "Proyecto"
 author: "Daniel Sabater"
 date: '2022-06-05'
-output: html_document
+output:
+  rmdformats::readthedown:
+    highlight: kate
 ---
 
-```{r setup, include=FALSE, message=FALSE, warning=FALSE}
+```{r setup, message=FALSE, warning=FALSE}
+
 # Programacion hecha por Joshua Cervantes, Moisés Monge y Daniel Sabater
 # Se cargan los paquetes
 knitr::opts_chunk$set(echo = FALSE)
@@ -358,6 +361,7 @@ Las tablas de decrementos constituyen
 
 
 ```{r}
+
 # porcentaje de pensión
 porcentaje_de_pension <- function(antiguedad) {
   
@@ -469,6 +473,7 @@ write.csv(escala, "./Escala_edad.csv", row.names = FALSE)
 ## Caso por antigüedad 
 
 ```{r}
+
 media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Antiguedad), FUN = mean)
 media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Antiguedad), FUN = mean)
 j <- 2
@@ -527,6 +532,7 @@ Primero, se programa una función que calcula el salario de referencia para el c
 Esta función se utiliza en el algortimo de Bacinello (1986) para calcular el salario de referencia una vez simulado que ocurre un decremeno en $k$ años.
 
 ```{r Funciones para calcular salarios de referencia}
+
 salario_referencia <- function(antiguedad, salario, k, n=5){
   
   # k es el tiempo hasta que ocurre un decremento o se llega a la edad máxima de jubilación
@@ -550,6 +556,7 @@ salario_referencia_multiple <- function(antiguedad, salario, k) {
 Por ejemplo, si una persona de edad $50$ sufre algún decremento $2$ años despúes y tenía a la edad $50$ una antiguedad de $10$ años, entonces el salario de referencia, suponiendo un salario actual de $900,000$ para el cálculo de su pensión es
 
 ```{r Ejemplo funcionalidad salario_referencia}
+
 salario_referencia(10, 900000, 2)
 ```
 
@@ -570,6 +577,7 @@ que corresponde al $p$-cuantil de $X$. Esta función se utiliza en el algortimo 
 -`p`: probabilidad de la cual se quiere calcular el cuantil
 
 ```{r Función para localizar cuantiles en modelo estocástico}
+
 hallar_cuantil <- function(distribucion, p) {
   if(p>max(distribucion)){k <- length(distribucion)-1}
   else{
@@ -582,12 +590,14 @@ hallar_cuantil <- function(distribucion, p) {
 #### Ejemplo
 
 ```{r, echo=F}
+
 set.seed(8000) 
 ```
 
 Se presenta un ejemplo para hallar el cuantil correspondiente a una muestra uniforme en (0,1) `r runif(1)` con la distribución de $W_{30}$. Se verifica gráficamente el desempeño adecuado de la función. Observe que el valor retornado debe ser el menor valor de $k$ tal que $F_{W_{30}}(k)\geq u$
 
 ```{r}
+
 # Edad
 x <- 30
 xi <- 85
@@ -602,6 +612,7 @@ plot(0:(xi-x-1), FWx) + abline(h = u, col="red") + abline(v = k, col="red")
 
 
 ```{r Función anualidad para modelo estocástico}
+
 # Se crea una función para calcular el monto de los beneficios si ocurre un decremento tras k años y la persona vive t años adicionales
 valor_anualidad <- function(k, t, v=1/1.07) {
     if(t==0){t=1}
@@ -618,15 +629,21 @@ valor_anualidad <- function(k, t, v=1/1.07) {
 
 Para calcular los costos asociados a las personas afiliadas al plan ofrecido por la Compañía, se implementa una modificación de uno de los algortimos descritos en Bacinello (1988) bajo un modelo de múltiples decrementos. El mencionado algoritmo permite simular la variable aleatoria $W_{x}$ del tiempo (en años) de trabajo residual de un empleado activo de edad $(x)$. En esencia, el método proporciona un criterio para, en un primer paso y dada una muestra de una distribución $\mathcal{U}(0,1)$, decidir si una persona de edad $(x)$ se llega a jubilar por llegar a la edad máxima de jubilación, en cuyo caso resta solamente simular su tiempo de vida residual. En su defecto, el algoritmo proporciona una regla para asignar, de acuerdo a una segunda muestra de una distribución $\mathcal{U}(0,1)$, cuál de los decrementos restantes sucedió para que no se llegara a la edad máxima de jubilación. Como puede comprobarse, el método requiere a lo sumo dos muestras provenientes de una distribución $\mathcal{U}(0,1)$ en aras de obtener una muestra de $W_{x}$.
 
-Se programa primero la función `costo_afiliado_estocastico`, que recibe los parámetros
+Se programa primero la función `costo_afiliado_estocastico`, que recibe los parámetros:
 
--`edad`: edad actual de la persona. 
+-`edad`: edad actual de la persona
+
 -`salario`: salario actual
+
 -`edad_maxima`: edad máxima de jubilación. Es 77 si la persona es mujer y 85 si es hombre.
+
 -`antiguedad`: antigüedad actual de la persona en la Compañía (cantidad de años laborados en la Compañía a la fecha)
+
 -`cant_simulaciones`: Cantidad de simulaciones a usar
--`lista_tablas_decrementos`: Objeto de tipo lista que contiene las tablas de múltiples decrementos para cada edad, es decir, es una lista de objetos tipo "mdt".
--`lista_tablas_mortalidad`: Objeto de tipo lista que contiene las tablas de múltiples decrementos para cada edad, es decir, una lista de objetos tipo "actuarialtable".
+
+-`lista_tablas_decrementos`: Objeto de tipo lista que contiene las tablas de múltiples decrementos para cada edad, es decir, es una lista de objetos tipo "mdt"
+
+-`lista_tablas_mortalidad`: Objeto de tipo lista que contiene las tablas de múltiples decrementos para cada edad, es decir, una lista de objetos tipo "actuarialtable"
 
 Asimismo, esta función retorna un vector de cuatro entradas, correspondiente al cálculo del costo para el plan de la Compañía asociado a esta persona de acuerdo al método estocástico según, en orden los riesgos de invalidez, jubilación y muerte, teniendo por cuarta entrada la suma de las anteriores.
 
@@ -772,6 +789,7 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
 Se calcula una simulación con la primera mujer de la tabla y 100 simulaciones.
 
 ```{r Ejemplo del uso de la función}
+
 i <- 1
 cant_simulaciones<-100
 edad <- afil_mujeres$Edad[i]
@@ -793,18 +811,26 @@ Para calcular los costos asociados a las personas afiliadas al plan ofrecido por
 
 Se programa primero la función `costo_afiliado_estocastico_grupo_etario`, que recibe los parámetros
 
--`edad`: edad actual de la persona. 
+-`edad`: edad actual de la persona
+
 -`salarios`: vector de salarios actuales del grupo
--`edad_maxima`: edad máxima de jubilación. Es 77 si la persona es mujer y 85 si es hombre.
+
+-`edad_maxima`: edad máxima de jubilación. Es 77 si la persona es mujer y 85 si es hombre
+
 -`antiguedades`: vector de antigüedades actuales de la personas del grupo
+
 -`cant_simulaciones`: Cantidad de simulaciones a usar
--`lista_tablas_decrementos`: Objeto de tipo lista que contiene las tablas de múltiples decrementos para cada edad, es decir, es una lista de objetos tipo "mdt".
+
+-`lista_tablas_decrementos`: Objeto de tipo lista que contiene las tablas de múltiples decrementos para cada
+edad, es decir, es una lista de objetos tipo "mdt".
+
 -`lista_tablas_mortalidad`: Objeto de tipo lista que contiene las tablas de múltiples decrementos para cada edad, es decir, una lista de objetos tipo "actuarialtable".
 
 Asimismo, esta función retorna un vector de cuatro entradas, correspondiente al cálculo del costo para el plan de la Compañía asociado a al grupo de una misma edad de acuerdo al método estocástico según, en orden, los riesgos de invalidez, jubilación y muerte, teniendo por cuarta entrada la suma de las anteriores.
 
 
 ```{r Modelo estocástico por grupos de edad}
+
 costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima, antiguedades, cant_simulaciones, lista_tablas_decrementos, lista_tablas_mortalidad) {
   x <- edad
   xi <- edad_maxima
@@ -1040,6 +1066,7 @@ comma(costo_afiliado_estocastico_grupo_etario(edad, salarios, edad_maxima, antig
 Con el siguiente código se calcularon las cifras presentadas en el proyecto. Se muestra el código mas este no se ejecuta, pues tarda alrededor de una hora en terminar.
 
 ```{r Prueba estocástico por grupo etario, eval=FALSE}
+
 set.seed(10)
 N <- 10000
 t <- proc.time()
