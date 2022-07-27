@@ -20,8 +20,8 @@ library(stringr)
 library(magrittr) # uso de %<>% con funciones de dplyr
 
 # Para paralelizar
-library(future.apply)
-plan(multicore)
+# library(future.apply)
+# plan(multicore)
 
 # Para imprimir los datos en formato de tabla
 tblPrint <- function(tbl, cap = NULL) {
@@ -424,14 +424,23 @@ salario_referencia <- function(antiguedad, salario, k) {
 # Estadistica
 ```{r}
 # Se genera una proyeccion hasta la extincion del plan de pensiones
-edades_pensionados_mujeres <- count(pen_mujeres, Edad)
-edades_pensionados_hombres <- count(pen_hombres, Edad)
-tabla_proyeccion <- data.frame("Anho", "Cantidad")
+edades_pensionados_m <- count(pen_mujeres, Edad)
+edades_pensionados_h <- count(pen_hombres, Edad)
+fila_m <- nrow(edades_pensionados_m)
+fila_h <- nrow(edades_pensionados_h)
+tabla_proyeccion <- data.frame("Anho" = numeric(max(fila_m, fila_h) + 1), "Cantidad" = numeric(max(fila_m, fila_h) + 1))
 
-for (i in 1:nrow(edades_pensionados_mujeres)) {
+for (i in 1:nrow(edades_pensionados_m)) {
   j <- 0
-  edad <- edades_pensionados_mujeres[i]
+  edad <- edades_pensionados_m$Edad[i]
+  numero <- edades_pensionados_m$Edad[i]
   p <- 1
+  while (p > 0) {
+    p <- pxt(ListaDeTablasMujeres[[edad + 1]], x = edad, t = j)
+    tabla_proyeccion$Anho[j + 1] <- j
+    tabla_proyeccion$Cantidad[j + 1] <- numero * p + tabla_proyeccion$Anho[j + 1]
+    j <- j + 1
+  }
 }
 ```
 
@@ -1032,7 +1041,7 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
     }
     return(monto * suma / simulaciones)
   }
-  valores <- unlist(future_mapply(FUN = fn2, edad = edades, monto = montos, SIMPLIFY = FALSE))
+  valores <- unlist(mapply(FUN = fn2, edad = edades, monto = montos, SIMPLIFY = FALSE))
   return(sum(valores))
 }
 ```
@@ -1182,25 +1191,25 @@ DecrementosIV <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuen
       }
       return(PV_aux)
     }
-    montos_pension[[i - min(Edad) + 1]] <- future_sapply(FUN = funcion_pv, X = j)
+    montos_pension[[i - min(Edad) + 1]] <- sapply(FUN = funcion_pv, X = j)
   }
   # Se procede a programar una funcion la cual permite estimar el valor de los individuos
   costo_individuo <- function(edad, antiguedad, ultimo_salario) {
     # Se carga la lista de acuerdo a la edad
     lista <- montos_pension[[edad - min(Edad) + 1]]
-    j <- (0:((115 - i) * (n == 0) + n))
+    j <- (0:((115 - edad) * (n == 0) + n))
     # Salarios de referencia
     salarios_ref <- unlist(sapply(
       FUN = beneficio, antiguedad = antiguedad,
       decremento = decremento, salario = ultimo_salario, X = j
     ))
-    # print(length(lista))
-    # print(length(salarios_ref))
+    #print(length(lista))
+    #print(length(salarios_ref))
     # print(paste(salarios_ref, lista))
     # Se regresa el monto total de los beneficios otorgados
     return(sum(salarios_ref * lista))
   }
-  PV <- unlist(future_mapply(FUN = costo_individuo, edad = Edad, antiguedad = antiguedad, ultimo_salario = ultimo_salario))
+  PV <- unlist(mapply(FUN = costo_individuo, edad = Edad, antiguedad = antiguedad, ultimo_salario = ultimo_salario))
   return(PV)
 }
 ```
@@ -1250,7 +1259,7 @@ DecrementoM <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento
         return(PV_aux)
       }
     }
-    montos_pension[[i - min(Edad) + 1]] <- future_sapply(FUN = function_pv, X = j)
+    montos_pension[[i - min(Edad) + 1]] <- sapply(FUN = function_pv, X = j)
   }
   costo_individuo <- function(edad, antiguedad, ultimo_salario) {
     # Se carga la lista de acuerdo a la edad
@@ -1268,7 +1277,7 @@ DecrementoM <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento
     # Se regresa el monto total de los beneficios otorgados
     return(sum(salarios_ref * lista))
   }
-  PV <- unlist(future_mapply(FUN = costo_individuo, edad = Edad, antiguedad = antiguedad, ultimo_salario = ultimo_salario))
+  PV <- unlist(mapply(FUN = costo_individuo, edad = Edad, antiguedad = antiguedad, ultimo_salario = ultimo_salario))
   return(PV)
 }
 ```
@@ -1366,14 +1375,14 @@ liquidacion <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_
 }
 
 # attach(afil_hombres)
-# afil_hombres$Liquidacion <- unlist(future_mapply(
+# afil_hombres$Liquidacion <- unlist(mapply(
 #  FUN = liquidacion, edad = Edad,
 #  salario_actual = Salario, antiguedad = Antiguedad,
 #  i = interes, inflacion = inflacion, aumento_real,
 #  porcentaje_aporte = porcentaje_aporte, sexo = "M"
 # ))
 # attach(afil_mujeres)
-# afil_mujeres$Liquidacion <- unlist(future_mapply(
+# afil_mujeres$Liquidacion <- unlist(mapply(
 #  FUN = liquidacion, edad = Edad,
 #  salario_actual = Salario, antiguedad = Antiguedad,
 #  i = interes, inflacion = inflacion, aumento_real,
@@ -1391,7 +1400,7 @@ liquidacion <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_
 
 ```{r}
 # Costo liquidacion de hombres
-liquidacion_h <- future_mapply(
+liquidacion_h <- mapply(
   FUN = liquidacion,
   edad = edades_h, salario_actual = salarios_h, antiguedad = antiguedades_h,
   i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte,
@@ -1416,7 +1425,7 @@ suma_total_h_18 <- sum(afil_hombres$Costo_plan_18) + pensionados_h
 
 
 # Costo liquidacion de mujeres
-liquidacion_m <- future_mapply(
+liquidacion_m <- mapply(
   FUN = liquidacion,
   edad = edades_m, salario_actual = salarios_m, antiguedad = antiguedades_m,
   i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte,
@@ -1445,16 +1454,16 @@ Se procede a construir una tabla en la cual se muestran los Resultados
 
 ```{r}
 # Empleados activos
-hombres_activos <- c(suma_invalidez_h, suma_jublicacion_h, suma_muerte_h, pensionados_h, suma_total_h)
-mujeres_activos <- c(suma_invalidez_m, suma_jublicacion_m, suma_muerte_m, pensionados_m, suma_total_m)
+hombres_activos <- c(suma_invalidez_h, suma_jublicacion_h, suma_muerte_h, suma_invalidez_h + suma_jublicacion_h + suma_muerte_h, pensionados_h, suma_total_h)
+mujeres_activos <- c(suma_invalidez_m, suma_jublicacion_m, suma_muerte_m, suma_invalidez_m + suma_jublicacion_m + suma_muerte_m, pensionados_m, suma_total_m)
 
 
 # Liquidacion
-hombres_liquidacion <- c(suma_invalidez_h_18, suma_jublicacion_h_18, suma_muerte_h_18, suma_liquidacion_h, pensionados_h, suma_total_h_18)
-mujeres_liquidacion <- c(suma_invalidez_m_18, suma_jublicacion_m_18, suma_muerte_m_18, suma_liquidacion_m, pensionados_m, suma_total_m_18)
+hombres_liquidacion <- c(suma_invalidez_h_18, suma_jublicacion_h_18, suma_muerte_h_18, suma_liquidacion_h, suma_invalidez_h_18 + suma_jublicacion_h_18 + suma_muerte_h_18 + suma_liquidacion_h, pensionados_h, suma_total_h_18)
+mujeres_liquidacion <- c(suma_invalidez_m_18, suma_jublicacion_m_18, suma_muerte_m_18, suma_liquidacion_m, suma_invalidez_m_18 + suma_jublicacion_m_18 + suma_muerte_m_18 + suma_liquidacion_m, pensionados_m, suma_total_m_18)
 
 # Montos
-etiquetas <- c("Invalidez", "Jubilación", "Muerte", "En curso de pago", "Total")
+etiquetas <- c("Invalidez", "Jubilación", "Muerte", "Subtotal", "En curso de pago", "Total")
 
 costos_liquidacion <- c(suma_total_h_18, suma_total_m_18, suma_total_h_18 + suma_total_m_18)
 
@@ -1464,7 +1473,7 @@ print(xtable(tabla_resultados, type = "latex", tabular.environment = "longtable"
   format.args = list(big.mark = ",", decimal.mark = "."),
   file = "tabla_resultados.tex"
 )
-etiquetas_liquidacion <- c("Invalidez", "Jubilación", "Muerte", "Liquidación", "En curso de pago", "Total")
+etiquetas_liquidacion <- c("Invalidez", "Jubilación", "Muerte", "Liquidación", "Subtotal", "En curso de pago", "Total")
 tabla_liquidacion <- data.frame("Etiquetas" = etiquetas_liquidacion, "Hombres" = hombres_liquidacion, "Mujeres" = mujeres_liquidacion)
 tabla_liquidacion %<>% mutate("Total" = Hombres + Mujeres)
 print(xtable(tabla_liquidacion, type = "latex", tabular.environment = "longtable"),
