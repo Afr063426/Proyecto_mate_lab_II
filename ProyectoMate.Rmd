@@ -265,7 +265,7 @@ porcentaje_de_pension <- function(antiguedad) {
 }
 
 
-beneficio <- function(antiguedad, decremento, salario, k) {
+beneficio <- function(antiguedad, decremento, salario, k, n = 5) {
   antiguedad <- antiguedad + k
   # invalidez
   if (decremento == 1) {
@@ -277,22 +277,27 @@ beneficio <- function(antiguedad, decremento, salario, k) {
   } else if (decremento == 4) {
     porcentaje_de_salario <- porcentaje_de_pension(antiguedad) * 0.2
   }
-  return(salario_referencia(antiguedad - k, salario, k) / 12 * porcentaje_de_salario)
+  return(salario_referencia(antiguedad - k, salario, k, n) / 12 * porcentaje_de_salario)
 }
 
-RebajoFondosInsuficientes <- function(MontodePension) {
-  MontoRebajado <- c(
-    MontodePension * 0.10 +
-      (MontodePension >= 2293400) * 0.35 * MontodePension +
-      (MontodePension >= 2866750) * 0.45 * MontodePension +
-      (MontodePension >= 3583437.50) * 0.55 * MontodePension +
-      (MontodePension >= 4479296.88) * 0.65 * MontodePension
-  )
-  if (MontoRebajado > MontodePension * 0.55) {
-    return(MontodePension * 0.55)
-  }
-  return(MontoRebajado)
+
+
+salario_referencia <- function(antiguedad, salario, k, n = 5) {
+
+  # k es el tiempo hasta que ocurre un decremento o se llega a la edad máxima de jubilación
+
+  t <- max(-antiguedad, k - (n - 1)):k
+
+  s <- (length(t) - 1):0
+
+  salario_ref <- mean((1.025)^t * (1.04)^(t + s)) * 12 * salario
+
+  return(salario_ref)
 }
+
+
+
+
 ```
 
 # Funciones que nos sirven a todos
@@ -356,64 +361,6 @@ qxt1 <- function(tabla, x, t, decrement = 5) {
 
 # Funciones que nos sirven a ambos
 
-```{r}
-# porcentaje de pensión
-porcentaje_de_pension <- function(antiguedad) {
-  porcebtajeVejez <- c((antiguedad >= 5 & antiguedad < 10) * 0.10 +
-    (antiguedad >= 10 & antiguedad < 15) * 0.15 +
-    (antiguedad >= 15 & antiguedad < 20) * 0.20 +
-    (antiguedad >= 20 & antiguedad < 25) * 0.25 +
-    (antiguedad >= 25 & antiguedad < 30) * 0.30 +
-    (antiguedad >= 30 & antiguedad < 35) * 0.35 +
-    (antiguedad >= 35) * 0.4)
-
-  return(porcebtajeVejez)
-}
-
-
-beneficio <- function(antiguedad, decremento, salario, k) {
-  antiguedad <- antiguedad + k
-  # invalidez
-  if (decremento == 1) {
-    porcentaje_de_salario <- porcentaje_de_pension(antiguedad) * 0.6
-    # vejez
-  } else if (decremento == 2) {
-    porcentaje_de_salario <- porcentaje_de_pension(antiguedad)
-    # muerte
-  } else if (decremento == 4) {
-    porcentaje_de_salario <- porcentaje_de_pension(antiguedad) * 0.2
-  }
-  return(salario_referencia(antiguedad - k, salario, k) / 12 * porcentaje_de_salario)
-}
-
-
-RebajoFondosInsuficientes <- function(MontodePension) {
-  MontoRebajado <- c(
-    MontodePension * 0.10 +
-      (MontodePension >= 2293400) * 0.35 * MontodePension +
-      (MontodePension >= 2866750) * 0.45 * MontodePension +
-      (MontodePension >= 3583437.50) * 0.55 * MontodePension +
-      (MontodePension >= 4479296.88) * 0.65 * MontodePension
-  )
-  if (MontoRebajado > MontodePension * 0.55) {
-    return(MontodePension * 0.55)
-  }
-  return(MontoRebajado)
-}
-
-salario_referencia <- function(antiguedad, salario, k) {
-
-  # k es el tiempo hasta que ocurre un decremento o se llega a la edad máxima de jubilación
-
-  t <- max(-antiguedad, k - 4):k
-
-  s <- (length(t) - 1):0
-
-  salario_ref <- mean((1.025)^t * (1.04)^(t + s)) * 12 * salario
-
-  return(salario_ref)
-}
-```
 
 
 
@@ -459,16 +406,17 @@ Primero, se programa una función que calcula el salario de referencia para el c
 Esta función se utiliza en el algortimo de Bacinello (1986) para calcular el salario de referencia una vez simulado que ocurre un decremeno en $k$ años.
 
 ```{r Funciones para calcular salarios de referencia}
-salario_referencia <- function(antiguedad, salario, k) {
+salario_referencia <- function(antiguedad, salario, k, n = 5) {
 
   # k es el tiempo hasta que ocurre un decremento o se llega a la edad máxima de jubilación
-  t <- max(-antiguedad, k - 4):k
+
+  t <- max(-antiguedad, k - (n - 1)):k
+
   s <- (length(t) - 1):0
+
   salario_ref <- mean((1.025)^t * (1.04)^(t + s)) * 12 * salario
+
   return(salario_ref)
-}
-salario_referencia_multiple <- function(antiguedad, salario, k) {
-  return(sapply(X = k, FUN = salario_referencia, antiguedad = antiguedad, salario = salario))
 }
 ```
 
@@ -1203,8 +1151,8 @@ DecrementosIV <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuen
       FUN = beneficio, antiguedad = antiguedad,
       decremento = decremento, salario = ultimo_salario, X = j
     ))
-    #print(length(lista))
-    #print(length(salarios_ref))
+    # print(length(lista))
+    # print(length(salarios_ref))
     # print(paste(salarios_ref, lista))
     # Se regresa el monto total de los beneficios otorgados
     return(sum(salarios_ref * lista))
@@ -1519,7 +1467,7 @@ suma_costos_ant %<>% mutate(
   Montos_plan = Montos_plan.x + Montos_plan.y,
   Montos_liquidacion = Montos_liquidacion.x + Montos_liquidacion.y,
   .keep = "unused"
-) %>% mutate(Proporcion = Montos_liquidacion / Montos_plan)
+) %>% mutate(Proporcion = Montos_liquidacion / Montos_plan*100)
 
 
 print(xtable(suma_costos_ant, type = "latex", tabular.environment = "longtable"),
@@ -1537,7 +1485,11 @@ grafico_barras_ant <- suma_costos_ant %>% ggplot() +
   ) +
   scale_x_continuous(name = "Antigüedad", breaks = seq(min(suma_costos_ant$Antiguedad), max(suma_costos_ant$Antiguedad), 5)) +
   scale_y_continuous(name = "Porcentaje", breaks = seq(0, 100, 10)) +
-  theme_minimal()
+  theme_minimal()+theme(axis.text.x = element_text(size=15),
+          axis.text.y = element_text(size=15),
+          axis.title.x = element_text(size=20),
+          axis.title.y = element_text(size=20)
+  )
 grafico_barras_ant
 ggsave("grafico_barras_ant.eps")
 ```
@@ -1570,7 +1522,9 @@ suma_costos_edad %<>% mutate(
   .keep = "unused"
 ) %>% mutate(Proporcion = Montos_liquidacion / Montos_plan * 100)
 
-# suma_costos_edad %<>% mutate(Edad = factor(Edad, levels = suma_costos_edad$Edad)) %>% arrange(Edad)
+
+
+
 grafico_barras_edad <- suma_costos_edad %>% ggplot() +
   geom_bar(aes(x = Edad, y = Proporcion),
     stat = "identity",
@@ -1579,52 +1533,137 @@ grafico_barras_edad <- suma_costos_edad %>% ggplot() +
     width = 0.8
   ) +
   scale_x_continuous(name = "Edad", breaks = seq(min(suma_costos_edad$Edad), max(suma_costos_edad$Edad), 5)) +
-  scale_y_continuous(name = "Procentaje", breaks = seq(0, 100, 10)) +
-  theme_minimal()
+  scale_y_continuous(name = "Porcentaje", breaks = seq(0, 100, 10)) +
+  theme_minimal()+theme(axis.text.x = element_text(size=15),
+          axis.text.y = element_text(size=15),
+          axis.title.x = element_text(size=20),
+          axis.title.y = element_text(size=20)
+  )
+
+
+
+
 grafico_barras_edad
 ggsave("grafico_barras_edad.eps")
 ```
 
 
+```{r}
+tabla_conjunta<- rbind(afil_hombres,afil_mujeres)
+k<-quantile(tabla_conjunta$Salario/1000,seq(0,1,length.out=15))#nclass.Sturges(tabla_conjunta$Salario/1000)
+
+tabla_conjunta$Intervalos<-cut(tabla_conjunta$Salario/1000,breaks=k,include.lowest=TRUE,dig.lab=5)
+
+#Grafico de barras salario
+suma_costos_salario <- tabla_conjunta %>%
+  group_by(Intervalos) %>%
+  summarise(
+    Montos_plan = sum(Costo_plan),
+    Montos_liquidacion = sum(Costo_plan_18)
+  )
 
 
+
+
+
+
+suma_costos_salario %<>% mutate(Proporcion = Montos_liquidacion / Montos_plan * 100)
+
+
+
+
+grafico_barras_salario <- suma_costos_salario %>% ggplot() +
+  geom_bar(aes(x = Intervalos, y = Proporcion),
+    stat = "identity",
+    position = position_dodge(),
+    fill = "red",
+    width = 0.8
+  ) +
+  theme_minimal(
+
+  )+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1,size=15),
+          axis.text.y = element_text(size=15),
+          axis.title.x = element_text(size=20),
+          axis.title.y = element_text(size=20)
+  )+xlab('Salario en miles de colones')+ylab('Porcentaje')
+
+
+
+
+grafico_barras_salario
+ggsave("grafico_barras_salario.eps")
+
+```
 ## Cotización futura
+
+### Calculo de reservas
+```{r}
+#Funcion para calculo de reservas
+reservas <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_real, porcentaje_aporte, sexo) {
+    v <- 1 / (1 + i)
+    # Para estimar el aumento que se le hizo al salario inicial hasta el momento
+    aumento <- (1 + inflacion) * (1 + aumento_real)
+
+    # Salario con el que se inició
+    salario_inicial <- salario_actual * (aumento)^(-antiguedad) * porcentaje_aporte
+
+    # Salarios que han sido pagados para el momento de la liquidación
+    salarios <- salario_inicial * aumento^(0:(antiguedad ))
+    salarios <- sort(rep(salarios, 12))
+    # Se crea un vector con 12 salarios de cada año
+    descontado <- v^seq(1 / 12, antiguedad + 1, 1 / 12) * (1 + i)^(antiguedad + 1)
+
+    # Se multiplica el descontado con los salarios pagados
+    monto <- sum(salarios * descontado)
+    if (!sexo) {
+      p <- pxt1(MDListaDeTablasMujeres[[edad + 1]], x = edad, t = 2)
+    } else if (sexo) {
+      p <- pxt1(MDListaDeTablasHombres[[edad + 1]], x = edad, t = 2)
+    }
+    return(monto * p)
+}
+
+#Calculo de reservas hombres
+reservas_hombres<-mapply(
+  FUN = reservas,
+  edad = edades_h, salario_actual = salarios_h, antiguedad = antiguedades_h,
+  i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte,
+  sexo = TRUE
+)
+#Calculo de reservas mujeres
+reservas_mujeres<-mapply(
+  FUN = reservas,
+  edad = edades_h, salario_actual = salarios_h, antiguedad = antiguedades_h,
+  i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte,
+  sexo = TRUE
+)
+reserva_total<- sum(reservas_hombres)+sum(reservas_mujeres)
+``
+
+
 ```{r}
 cotizacionfutura <-
-  function(Edad, hombre, antiguedad, ultimo_salario) {
-    v <- (1) / (1 + tasa_descuento)
-    vectorMensual <- seq(1 / 12, 10, 1 / 12)
-    # traer al presente
+  function(Edad, hombre, ultimo_salario, t=117,porcentaje_aporte=1) {
+    v <- (1) / (1 + 0.07 )
     if (hombre) {
-      ultimo_salario * ((1 + 0.04) * (1 + 0.025))^(0:(85 - Edad)) * 12 *
-        pxt(MDListaDeTablasHombres[[(85 - Edad)]], x = (85 - Edad), t = 1)
-    } else {
-      ultimo_salario * ((1 + 0.04) * (1 + 0.025))^(0:(85 - Edad)) * 12 *
-        pxt(MDListaDeTablasMujeres[[(77 - Edad)]], x = (77 - Edad), t = 1)
+      t<-min(85-Edad,t)
+      salariosfuturos<-ultimo_salario * ((1 + 0.04)*(1+0.025))^(1:(t))*12*
+        pxt1(MDListaDeTablasHombres[[Edad+1]], x = Edad, t = (1:t))* v^(0:(t-1))
+        return(salariosfuturos*porcentaje_aporte)
+      } else {
+        t<-min(77-Edad,t)
+      salariosfuturos<-ultimo_salario * ((1 + 0.04)*(1+0.025))^(1:(t))*12*
+        pxt1(MDListaDeTablasMujeres[[Edad+1]], x = Edad, t = (1:t))* v^(0:(t-1))
+        return(salariosfuturos*porcentaje_aporte)
+      }  
     }
-  }
+SalariosM<-mapply( cotizacionfutura,  afil_mujeres$Edad, FALSE, afil_mujeres$Salario)
+SalariosH<-mapply( cotizacionfutura,  afil_hombres$Edad, TRUE, afil_hombres$Salario)
+sum(unlist(SalariosM))+sum(unlist(SalariosH))
+pi<-(sum(afil_mujeres$Costo_plan)+sum(afil_hombres$Costo_plan) +70993242384.84)/(sum(unlist(SalariosM))+sum(unlist(SalariosH)))
+
 ```
 
-
-
-
-```{r}
-
-cotizacionfuturaM <- cotizacionfutura(afil_mujeres$Edad, FALSE, afil_mujeres$Antiguedad, afil_mujeres$Salario)
-cotizacionfuturaH <- cotizacionfutura(afil_hombres$Edad, FALSE, afil_hombres$Antiguedad, afil_hombres$Salario)
-
-
-MontoParaMujeresDeterministicoV <-
-  DecrementosIV(
-    afil_hombres$Edad[1],
-    TRUE,
-    afil_hombres$Antiguedad[1],
-    afil_hombres$Salario[1],
-    0.07,
-    56,
-    2
-  )
-```
 
 
 
