@@ -1039,8 +1039,14 @@ write.csv(costos_grupal_estoc_m,"Costos estocástico mujeres por grupo etario.cs
 
 
 
-# Funcion para determinar pension de personas ya pensionadas
+### Funcion para determinar pension de personas ya pensionadas
 
+Se ha creado una función para el calculo estocástico de las pensiones en curso de pago llamada `pension_pen`. Recibe los siguiente parámetros:
+`base_de_datos` (data.frame): esta es la base de los ya pensionados.
+`sex` (boolean): se indica si la base de datos corresponde a la de hombres (`TRUE`) o mujeres (`FALSE`).
+`t_descuento` (numeric): tasa utilizada para llevar montos a valor presente.
+`m` (numeric): la cantidad de pagos que se relizan al año.
+`simulaciones`(numeric): número de simulaciones deseadas.
 ```{r}
 pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
   v <- 1 / (1 + t_descuento)
@@ -1081,9 +1087,14 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 ## Calculo de pension estocastico
 
 ```{r}
+#Resultado de los pensionados
+##Mujeres
 (pension_pen_m <- pension_pen(pen_mujeres, FALSE, 0.07, 12, 1000))
+
+##Hombres
 (pension_pen_h <- pension_pen(pen_hombres, TRUE, 0.07, 12, 1000))
 
+#Se guardan los resultados en un txt
 fileConn <- file("output.txt")
 writeLines(paste("Estocastico:", "Mujeres", pension_pen_m, "Hombres", pension_pen_h, sep = " "), fileConn)
 close(fileConn)
@@ -1092,16 +1103,19 @@ close(fileConn)
 
 # Deterministico
 
-# Funciones que nos sirven a ambos
 
+Se presentan las funciones necesarias para otras funciones.
+
+La función `porcentaje_de_pension` retorna el porcentaje de pensión que le correspondería al individuo de acuerdo a la antigüedad, la variables que recibe son las siguientes parámetros:
+`antiguedad` (numeric): tiempo que lleva la persona laborando en la empresa.
+
+La función `beneficio` retorna el monto correspondiende de pensión de acuerdo al momento de salida, decremento y antigüedad, recibe:
+`antiguedad` (numeric): tiempo que lleva la persona laborando en la empresa.
+`decremento` (numeric): es el tipo de decremento por el que salió el individuo.
+`salario` (numeric): es el salario actual del individuo.
+`k` (numeric): tiempo transcurrido del momento de valoración y momento esperado de saldia.
 ```{r}
-x <- c(qxt(MDListaDeTablasHombres[[56 + 1]], x = 56, t = 1), qxt(MDListaDeTablasHombres[[56 + 1]], x = 56, t = 1, decrement = 1))
-x
-```
-
-
-```{r}
-# porcentaje de pensión
+# Porcentaje de pensión
 porcentaje_de_pension <- function(antiguedad) {
   porcebtajeVejez <- c((antiguedad >= 5 & antiguedad < 10) * 0.10 +
     (antiguedad >= 10 & antiguedad < 15) * 0.15 +
@@ -1131,19 +1145,7 @@ beneficio <- function(antiguedad, decremento, salario, k) {
 }
 
 
-RebajoFondosInsuficientes <- function(MontodePension) {
-  MontoRebajado <- c(
-    MontodePension * 0.10 +
-      (MontodePension >= 2293400) * 0.35 * MontodePension +
-      (MontodePension >= 2866750) * 0.45 * MontodePension +
-      (MontodePension >= 3583437.50) * 0.55 * MontodePension +
-      (MontodePension >= 4479296.88) * 0.65 * MontodePension
-  )
-  if (MontoRebajado > MontodePension * 0.55) {
-    return(MontodePension * 0.55)
-  }
-  return(MontoRebajado)
-}
+
 ```
 
 
@@ -1151,12 +1153,14 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 
 # Modelos Deterministicos
 
-## Personas ya pensionadas
+## Modelo para personas ya pensionadas
+Aqui se procede a programar la funcion para estimar valor de las pensiones en curso de pago `PensionMensualDeterministico`
+`Edad` (numeric): corresponde a la edad cumplida por el individuos.
+`hombre` (boolean): Se indica si es hombre (TRUE) o mujer (FALSE).
+`MontoDePension` (numeric): Monto de pension actual.
+`tasa_descuento` (numeric): tasa de interes empleada para estimar el valor presente.
 
 ```{r}
-# hombres
-# PensionMensualDeterministico
-## No es un seguro de vida completo y necesita diferimiento
 PensionMensualDeterministico <- function(Edad, hombre, MontoDePension, tasa_descuento) {
   v <- (1) / (1 + tasa_descuento)
   # aguinlado
@@ -1189,10 +1193,13 @@ PensionMensualDeterministico <- function(Edad, hombre, MontoDePension, tasa_desc
 
 
 
-## Calculo para las pensiones de los ya pensionados
+### Calculo para las pensiones de los ya pensionados
 
 ```{r}
-# calculo de pensión para hombres pensionados
+#En este chunk se procede a emplear la funcion para estimar las pensiones
+#tanto para hombres como para mujeres
+
+##Calculo para hombres con pension
 MontoDePensionMensualParaHombresDeterministicoPensionados <-
   mapply(
     PensionMensualDeterministico,
@@ -1201,9 +1208,11 @@ MontoDePensionMensualParaHombresDeterministicoPensionados <-
     pen_hombres$MON_PEN,
     0.07
   )
+
+###Se imprime el costo de los hombres
 (pensionados_h <- sum(MontoDePensionMensualParaHombresDeterministicoPensionados))
 
-# calculo de pensión para mujeres pensionados
+##Calculo de pensión para mujeres con pension
 MontoDePensionMensualParaMujeresDeterministicoPensionados <-
   mapply(
     PensionMensualDeterministico,
@@ -1212,29 +1221,52 @@ MontoDePensionMensualParaMujeresDeterministicoPensionados <-
     pen_mujeres$MON_PEN,
     0.07
   )
+
+###Se imprime el costo de las mujeres
 (pensionados_m <- sum(MontoDePensionMensualParaMujeresDeterministicoPensionados))
 ```
 
-
+## Comparativa pensiones en curso de pago modelo estocástico y determinístico
 Se estima el error relativo del modelo estocástico respecto al deterministico, de las pensiones en curso de pago
 
 ```{r}
-# Total de modelo deterministico
+##Total de modelo deterministico
 total_determistico <- pensionados_m + pensionados_h
+
+#Total de modelo estocastico
 total_estocastico <- pension_pen_m + pension_pen_h
+
+#Errores relativos
+##Error relativo mujeres
 (error_relativo_m <- abs((pensionados_m - (pension_pen_m))) / (pensionados_m))
+
+##Error relativo hombres
 (error_relativo_h <- abs((pensionados_h - (pension_pen_h))) / (pensionados_h))
+
+##Error relativo de todo el calculo
 (error_relativo <- abs((pensionados_m + pensionados_h - (pension_pen_m + pension_pen_h))) / (pensionados_m + pensionados_h))
+
 formatC(total_estocastico, format = "f", big.mark = ",", digits = 3, decimal.mark = ".")
 ```
 
 # Personal activo
 
-### Funcion decremento Invalidez y Vejez
+## Funcion para decrementos de invalidez y vejez
+La siguiente funcion es la empleada para calcular el costo del beneficio obtenido de acuerdo al decremento de vejez o invalidez, es llamada `DecrementoIV` y recibe:
+
+`Edad` (numeric): es la edad cumplida por el individuo.
+`hombre` (boolean): indica si el individuo es hombre (`TRUE`) o mujer (`FALSE`).
+`antiguedad` (numeric): es el tiempo que lleva el individuo laborando en la empresa.
+`ultimo_salario` (numeric): último salario que está recibiendo el individuo.
+`tasa_decuento` (numeric): tasa empleada para calcular los montos a valor presente.
+`tasa_cre_salario` (numeric): es la tasa real de crecimiento salarial.
+`decremento` (numeric): es el número de decremento que se quiere valorar.
+`n` (numeric): indica el tiempo en el que puede recibir
+
 
 
 ```{r}
-# Optimizacion de la funcion
+
 DecrementosIV <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento, n = 0) {
   # Se va generar una tabla con los montos definidos para cada edad de pension
   montos_pension <- list()
