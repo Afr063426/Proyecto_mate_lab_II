@@ -1149,43 +1149,50 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 
 
 
-## Personas ya pensionadas
+# Modelos Deterministicos
 
+## Personas ya pensionadas
 
 ```{r}
 # hombres
 # PensionMensualDeterministico
 ## No es un seguro de vida completo y necesita diferimiento
-PensionMensualDeterministico <-
-  function(Edad, hombre, MontoDePension, tasa_descuento) {
-    v <- (1) / (1 + tasa_descuento)
-    # aguinlado
-    MontoAPagar <- MontoDePension
-    vectoraguinalado <- c(rep(0, 10), 1, 0)
-    vectorMensual <- (seq(1 / 12, (115 - Edad + 1), 1 / 12))
-    vectorAnualmensual <- sort(rep(c(0:(115 - Edad)), 12))
+PensionMensualDeterministico <- function(Edad, hombre, MontoDePension, tasa_descuento) {
+  v <- (1) / (1 + tasa_descuento)
+  # aguinlado
+  MontoAPagar <- MontoDePension
+  vectoraguinalado <- c(rep(0, 10), 1, 0)
+  vectorMensual <- (seq(1 / 12, (115 - Edad + 1), 1 / 12))
+  vectorAnualmensual <- sort(rep(c(0:(115 - Edad)), 12))
 
-    if (hombre) {
+  if (hombre) {
 
-      # anualidad inmediata
-      anualidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = Edad, t = vectorMensual) *
-        (v)^(vectorMensual)
-      # monto a pagar con ajuste inflacionario
-      MontoAPagar <- MontoAPagar * (1 + 0.04)^(vectorAnualmensual) * 2^(vectoraguinalado)
-      suma <- anualidad * MontoAPagar
-    } else {
-      # anualidad inmediata
-      anualidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = Edad, t = vectorMensual) *
-        (v)^(vectorMensual)
-      # monto a pagar con ajuste inflacionario
-      MontoAPagar <- MontoAPagar * (1 + 0.04)^(vectorAnualmensual) * 2^(vectoraguinalado)
-      suma <- anualidad * MontoAPagar
-    }
-    suma <- sum(suma)
-    return(suma)
+    # anualidad inmediata
+    anualidad <- pxt(ListaDeTablasHombres[[(Edad + 1)]], x = Edad, t = vectorMensual) *
+      (v)^(vectorMensual)
+    # monto a pagar con ajuste inflacionario
+    MontoAPagar <- MontoAPagar * (1 + 0.04)^(vectorAnualmensual) * 2^(vectoraguinalado)
+    suma <- anualidad * MontoAPagar
+  } else {
+    # anualidad inmediata
+    anualidad <- pxt(ListaDeTablasMujeres[[(Edad + 1)]], x = Edad, t = vectorMensual) *
+      (v)^(vectorMensual)
+    # monto a pagar con ajuste inflacionario
+    MontoAPagar <- MontoAPagar * (1 + 0.04)^(vectorAnualmensual) * 2^(vectoraguinalado)
+    suma <- anualidad * MontoAPagar
   }
+  suma <- sum(suma)
+  return(suma)
+}
+```
 
-# calculo de pension para hombres pensionados
+
+
+
+## Calculo para las pensiones de los ya pensionados
+
+```{r}
+# calculo de pensión para hombres pensionados
 MontoDePensionMensualParaHombresDeterministicoPensionados <-
   mapply(
     PensionMensualDeterministico,
@@ -1194,10 +1201,9 @@ MontoDePensionMensualParaHombresDeterministicoPensionados <-
     pen_hombres$MON_PEN,
     0.07
   )
+(pensionados_h <- sum(MontoDePensionMensualParaHombresDeterministicoPensionados))
 
-sum(MontoDePensionMensualParaHombresDeterministicoPensionados)
-
-# calculo de pension para mujeres pensionados
+# calculo de pensión para mujeres pensionados
 MontoDePensionMensualParaMujeresDeterministicoPensionados <-
   mapply(
     PensionMensualDeterministico,
@@ -1206,177 +1212,222 @@ MontoDePensionMensualParaMujeresDeterministicoPensionados <-
     pen_mujeres$MON_PEN,
     0.07
   )
-sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
+(pensionados_m <- sum(MontoDePensionMensualParaMujeresDeterministicoPensionados))
 ```
 
 
+Se estima el error relativo del modelo estocástico respecto al deterministico, de las pensiones en curso de pago
+
 ```{r}
-# calculo de pension para hombres pensionados
-MontoDePensionMensualParaHombresDeterministicoPensionados <-
-  mapply(
-    PensionMensualDeterministico,
-    pen_hombres$Edad,
-    TRUE,
-    pen_hombres$MON_PEN,
-    0.07
-  )
-
-sum(MontoDePensionMensualParaHombresDeterministicoPensionados)
-
-
-# calculo de pension para mujeres pensionados
-MontoDePensionMensualParaMujeresDeterministicoPensionados <-
-  mapply(
-    PensionMensualDeterministico,
-    pen_mujeres$Edad,
-    FALSE,
-    pen_mujeres$MON_PEN,
-    0.07
-  )
-sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
+# Total de modelo deterministico
+total_determistico <- pensionados_m + pensionados_h
+total_estocastico <- pension_pen_m + pension_pen_h
+(error_relativo_m <- abs((pensionados_m - (pension_pen_m))) / (pensionados_m))
+(error_relativo_h <- abs((pensionados_h - (pension_pen_h))) / (pensionados_h))
+(error_relativo <- abs((pensionados_m + pensionados_h - (pension_pen_m + pension_pen_h))) / (pensionados_m + pensionados_h))
+formatC(total_estocastico, format = "f", big.mark = ",", digits = 3, decimal.mark = ".")
 ```
 
-## Personal activo
-Deterministico para no pensionadas
-Funciones a utilizar
+# Personal activo
 
-## Funcion decremento IV
+### Funcion decremento Invalidez y Vejez
+
+
 ```{r}
-DecrementosIV <-
-  function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento){
-    
-    v<-(1)/(1+tasa_descuento)
-    
-    #La funcion beneficio aun no ha sido definida
-    vectoraguinaldo<-c(rep(0,10),1,0)
-    PV<-0
-    if(hombre){
-      for(k in 0:(115-Edad)){
-        vectorMensual<-(seq(1/12, (115-Edad+1-k), 1/12))
-        vectorAnualmensual<-sort(rep(c(0:(115-Edad-k)),12))
-        MontoAPagar <-beneficio(antiguedad, decremento, ultimo_salario, k)*(1+0.04)^(vectorAnualmensual)*2^vectoraguinaldo
-        
-        
-        anualidad <-pxt(ListaDeTablasHombres[[(Edad+1)]],x=Edad+k,t=vectorMensual)*(v)^(vectorMensual)
-        suma1 <- sum(anualidad * MontoAPagar)
-        PV <- PV + suma1*v^(k+1)*pxt(MDListaDeTablasHombres[[Edad+1]],x=Edad,t=k)*qxt(MDListaDeTablasHombres[[Edad+1]],x=Edad+k ,t=1, decrement=decremento)
-        }
+# Optimizacion de la funcion
+DecrementosIV <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento, n = 0) {
+  # Se va generar una tabla con los montos definidos para cada edad de pension
+  montos_pension <- list()
+  v <- (1) / (1 + tasa_descuento)
+  edades <- min(Edad):max(Edad)
 
-    }else{
-      
-      for(k in 0:(115-Edad)){
-        vectorMensual<-(seq(1/12, (115-Edad+1-k), 1/12))
-        vectorAnualmensual<-sort(rep(c(0:(115-Edad-k)),12))
-        MontoAPagar <-beneficio(antiguedad, decremento, ultimo_salario, k)*(1+0.04)^(vectorAnualmensual)*2^vectoraguinaldo
-        
-        
-        anualidad <-pxt(ListaDeTablasMujeres[[(Edad+1)]],x=Edad+k,t=vectorMensual)*(v)^(vectorMensual)
+  # La funcion beneficio aun no ha sido definida
+  vectoraguinaldo <- c(rep(0, 10), 1, 0)
+  for (i in edades) {
+    # Tamaño del vector y posiciones, se va pasar como k
+    j <- (0:((115 - i) * (n == 0) + n))
+    # Vector donde se van guardando los valores sin tener en cuenta el monto de beneficio, esto ya que se le multiplicará a cada individuo
+    # PV_aux <- numeric(length(j))
+    # Funcion para estimar cada entrada del PV,  que corresponden
+    # a cada uno
+    funcion_pv <- function(k) {
+      PV_aux <- 0
+      if (hombre) {
+        # Vector al que se eleva el v
+        vectorMensual <- (seq(1 / 12, (115 - i + 1 - k), 1 / 12))
+        # Vector para controlar la inflacion
+        vectorAnualmensual <- sort(rep(c(0:(115 - i - k)), 12))
+        # Vector que contiene los montontos a pagar esto es los montos ajustados por inflacion y multiplicados
+        # por si se debería calcular el aguinaldo
+        MontoAPagar <- (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+        # Vector multiplicando las probabilidad de sobrevivencia es decir tpx*v^t/m
+        anualidad <- pxt(ListaDeTablasHombres[[(i + 1)]], x = i + k + 1, t = vectorMensual) * (v)^(vectorMensual)
+        # Multiplicando ambos
         suma1 <- sum(anualidad * MontoAPagar)
-        
-        PV <- PV + suma1*v^(k+1)*pxt(MDListaDeTablasMujeres[[Edad+1]],x=Edad,t=k)*qxt(MDListaDeTablasMujeres[[Edad+1]],x=Edad+k ,t=1, decrement=decremento)
-        }
-
+        PV_aux <- suma1 * v^(k + 1) * pxt1(MDListaDeTablasHombres[[i + 1]], x = i, t = k) * qxt1(MDListaDeTablasHombres[[i + 1]], x = i + k, t = 1, decrement = decremento)
+      } else {
+        # Vector al que se eleva el v
+        vectorMensual <- (seq(1 / 12, (115 - i + 1 - k), 1 / 12))
+        # Vector para controlar la inflacion
+        vectorAnualmensual <- sort(rep(c(0:(115 - i - k)), 12))
+        # Vector que contiene los montontos a pagar esto es los montos ajustados por inflacion y multiplicados
+        # por si se debería calcular el aguinaldo
+        MontoAPagar <- (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+        # Vector multiplicando las probabilidad de sobrevivencia es decir tpx*v^t/m
+        anualidad <- pxt(ListaDeTablasMujeres[[(i + 1)]], x = i + k + 1, t = vectorMensual) * (v)^(vectorMensual)
+        # Multiplicando ambos
+        suma1 <- sum(anualidad * MontoAPagar)
+        PV_aux <- suma1 * v^(k + 1) * pxt1(MDListaDeTablasMujeres[[i + 1]], x = i, t = k) * qxt1(MDListaDeTablasMujeres[[i + 1]], x = i + k, t = 1, decrement = decremento)
+      }
+      return(PV_aux)
     }
-    return(PV)
+    montos_pension[[i - min(Edad) + 1]] <- sapply(FUN = funcion_pv, X = j)
   }
-
+  # Se procede a programar una funcion la cual permite estimar el valor de los individuos
+  costo_individuo <- function(edad, antiguedad, ultimo_salario) {
+    # Se carga la lista de acuerdo a la edad
+    lista <- montos_pension[[edad - min(Edad) + 1]]
+    j <- (0:((115 - edad) * (n == 0) + n))
+    # Salarios de referencia
+    salarios_ref <- unlist(sapply(
+      FUN = beneficio, antiguedad = antiguedad,
+      decremento = decremento, salario = ultimo_salario, X = j
+    ))
+    # print(length(lista))
+    # print(length(salarios_ref))
+    # print(paste(salarios_ref, lista))
+    # Se regresa el monto total de los beneficios otorgados
+    return(sum(salarios_ref * lista))
+  }
+  PV <- unlist(mapply(FUN = costo_individuo, edad = Edad, antiguedad = antiguedad, ultimo_salario = ultimo_salario))
+  return(PV)
+}
 ```
+
+
+```{r}
+DecrementosIV2(afil_mujeres$Edad, FALSE, afil_mujeres$Antiguedad, afil_mujeres$Salario, 0.07, 0, 1)
+```
+
 
 ## Funcion decremento muerte
 
-```{r}
-DecrementoM <-
-  function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario) {
-    v <- (1) / (1 + tasa_descuento)
 
-    # La funcion beneficio aun no ha sido definida
-    vectoraguinaldo <- c(rep(0, 10), 1, 0)
-    vectorMensual <- seq(1 / 12, 10, 1 / 12)
-    vectorAnualmensual <- sort(rep(c(0:9), 12))
-    PV <- 0
+
+```{r}
+
+DecrementoM <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, n = 0) {
+  v <- (1) / (1 + tasa_descuento)
+  edades <- min(Edad):max(Edad)
+  montos_pension <- list()
+  vectoraguinaldo <- c(rep(0, 10), 1, 0)
+  vectorMensual <- seq(1 / 12, 10, 1 / 12)
+  vectorAnualmensual <- sort(rep(c(0:9), 12))
+  for (i in edades) {
+    if (n != 0) {
+      n <- min(((85 - i) * hombre + (77 - i) * !hombre), n)
+    }
+    j <- (0:(((85 - i) * hombre + (77 - i) * !hombre) * (n == 0) + n))
     if (hombre) {
-      for (k in 0:(85 - Edad)) {
-        MontoAPagar <- beneficio(antiguedad, 4, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
-        suma1 <- sum((v)^(vectorMensual) * MontoAPagar)
-        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) *
-          qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = 4)
+      function_pv <- function(k) {
+        MontoPagar <- (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+        suma1 <- sum((v)^(vectorMensual) * MontoPagar)
+
+
+        PV_aux <- suma1 * v^(k + 1) * pxt1(MDListaDeTablasHombres[[i + 1]], x = i, t = k) *
+          qxt1(MDListaDeTablasHombres[[i + 1]], x = i + k, t = 1, decrement = 4)
+
+        return(PV_aux)
       }
     } else {
-      for (k in 0:(77 - Edad)) {
-        MontoAPagar <- beneficio(antiguedad, 4, ultimo_salario, k) * (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
-        suma1 <- sum((v)^(vectorMensual) * MontoAPagar)
-        PV <- PV + suma1 * v^(k + 1) * pxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad, t = k) *
-          qxt(MDListaDeTablasHombres[[Edad + 1]], x = Edad + k, t = 1, decrement = 4)
+      function_pv <- function(k) {
+        MontoPagar <- (1 + 0.04)^(vectorAnualmensual) * 2^vectoraguinaldo
+        suma1 <- sum((v)^(vectorMensual) * MontoPagar)
+
+        PV_aux <- suma1 * v^(k + 1) * pxt1(MDListaDeTablasMujeres[[i + 1]], x = i, t = k) *
+          qxt1(MDListaDeTablasMujeres[[i + 1]], x = i + k, t = 1, decrement = 4)
+        return(PV_aux)
       }
     }
-    return(PV)
+    montos_pension[[i - min(Edad) + 1]] <- sapply(FUN = function_pv, X = j)
   }
+  costo_individuo <- function(edad, antiguedad, ultimo_salario) {
+    # Se carga la lista de acuerdo a la edad
+    lista <- montos_pension[[edad - min(Edad) + 1]]
+    if (n != 0) {
+      n <- min(((85 - edad) * hombre + (77 - edad) * !hombre), n)
+    }
+    j <- (0:(((85 - edad) * hombre + (77 - edad) * !hombre) * (n == 0) + n))
+    # Salarios de referencia
+    salarios_ref <- unlist(sapply(
+      FUN = beneficio, antiguedad = antiguedad,
+      decremento = 4, salario = ultimo_salario, X = j
+    ))
+    # print(paste(salarios_ref, lista))
+    # Se regresa el monto total de los beneficios otorgados
+    return(sum(salarios_ref * lista))
+  }
+  PV <- unlist(mapply(FUN = costo_individuo, edad = Edad, antiguedad = antiguedad, ultimo_salario = ultimo_salario))
+  return(PV)
+}
 ```
 
 ## Calculo de personas activas IVM
-### Hombres
+```{r} 
+# Calculo de lo montos para hombres
+edades_h <- afil_hombres$Edad
+antiguedades_h <- afil_hombres$Antiguedad
+salarios_h <- afil_hombres$Salario
+tasa_descuento <- 0.07
+tasa_crecimiento_r <- 0
 
-```{r}
+# Por invalidez
+salida_invalidez_h <- DecrementosIV(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 1)
+# Por jubilacion
+salida_jubilacion_h <- DecrementosIV(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 2)
+# Por muerte
+salida_muerte_h <- DecrementoM(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r)
 
-# calculo de pension para mujeres pensionados
-MontoDePensionMensualParaMujeresDeterministicoPensionados <-
-  mapply(
-    PensionMensualDeterministico,
-    pen_mujeres$Edad,
-    FALSE,
-    pen_mujeres$MON_PEN,
-    0.07
-  )
-sum(MontoDePensionMensualParaMujeresDeterministicoPensionados)
+salida_total_hombres <- salida_invalidez_h + salida_jubilacion_h + salida_muerte_h
 
+afil_hombres$Costo_plan <- salida_total_hombres
+
+suma_invalidez_h <- sum(salida_invalidez_h)
+suma_jublicacion_h <- sum(salida_jubilacion_h)
+suma_muerte_h <- sum(salida_muerte_h)
+suma_total_h <- sum(afil_hombres$Costo_plan) + pensionados_h
 
 ### Mujeres
+edades_m <- afil_mujeres$Edad
+antiguedades_m <- afil_mujeres$Antiguedad
+salarios_m <- afil_mujeres$Salario
+tasa_descuento <- 0.07
+tasa_crecimiento_r <- 0
+# Calculo de lo montos para muejeres
+# Por invalidez
+salida_invalidez_m <- DecrementosIV(edades_m, FALSE, antiguedades_m, salarios_m, 0.07, 0, 1)
+# Por jubilacion
+salida_jubilacion_m <- DecrementosIV(edades_m, FALSE, antiguedades_m, salarios_m, 0.07, 0, 2)
+# Por muerte
+salida_muerte_m <- DecrementoM(edades_m, FALSE, antiguedades_m, salarios_m, tasa_descuento, tasa_crecimiento_r)
 
 
-# calculo de pension para mujeres
+salida_total_mujeres <- salida_invalidez_m + salida_jubilacion_m + salida_muerte_m
 
-MontoParaMujeresDeterministicoM <-
-  future_mapply(
-    DecrementoM,
-    afil_mujeres$Edad,
-    FALSE,
-    afil_mujeres$Antiguedad,
-    afil_mujeres$Salario,
-    0.07,
-    56
-  )
-sum(unlist(MontoParaMujeresDeterministicoM))
+afil_mujeres$Costo_plan <- salida_total_mujeres
 
 
-
-MontoParaMujeresDeterministicoI <-
-  mapply(
-    DecrementosIV,
-    afil_mujeres$Edad[1],
-    FALSE,
-    afil_mujeres$Antiguedad[1],
-    afil_mujeres$Salario[1],
-    0.07,
-    56,
-    1
-  )
-sum(MontoParaMujeresDeterministicoI)
-
-MontoParaMujeresDeterministicoV <-
-  future_mapply(
-    DecrementosIV,
-    afil_mujeres$Edad,
-    FALSE,
-    afil_mujeres$Antiguedad,
-    afil_mujeres$Salario,
-    0.07,
-    56,
-    2
-  )
-sum(MontoParaMujeresDeterministicoV)
-
-sum(MontoParaMujeresDeterministicoV, MontoParaMujeresDeterministicoI, MontoParaMujeresDeterministicoM)
+suma_invalidez_m <- sum(salida_invalidez_m)
+suma_jublicacion_m <- sum(salida_jubilacion_m)
+suma_muerte_m <- sum(salida_muerte_m)
+suma_total_m <- sum(afil_mujeres$Costo_plan) + pensionados_m
 ```
+
+
+
+
+
+
 
 ```{r}
 # Ideas para eleboración de la función
@@ -1402,10 +1453,10 @@ liquidacion <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_
 
     # Se multiplica el descontado con los salarios pagados
     monto <- sum(salarios * descontado)
-    if (sexo == "F") {
-      p <- pxt(MDListaDeTablasMujeres[[edad + 1]], x = edad, t = 2)
-    } else if (sexo == "M") {
-      p <- pxt(MDListaDeTablasHombres[[edad + 1]], x = edad, t = 2)
+    if (!sexo) {
+      p <- pxt1(MDListaDeTablasMujeres[[edad + 1]], x = edad, t = 2)
+    } else if (sexo) {
+      p <- pxt1(MDListaDeTablasHombres[[edad + 1]], x = edad, t = 2)
     }
     return(monto * p)
   } else {
@@ -1413,95 +1464,277 @@ liquidacion <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_
   }
 }
 
-attach(afil_hombres)
-afil_hombres$Liquidacion <- unlist(future_mapply(
-  FUN = liquidacion, edad = Edad,
-  salario_actual = Salario, antiguedad = Antiguedad,
-  i = interes, inflacion = inflacion, aumento_real,
-  porcentaje_aporte = porcentaje_aporte, sexo = "M"
-))
-attach(afil_mujeres)
-afil_mujeres$Liquidacion <- unlist(future_mapply(
-  FUN = liquidacion, edad = Edad,
-  salario_actual = Salario, antiguedad = Antiguedad,
-  i = interes, inflacion = inflacion, aumento_real,
-  porcentaje_aporte = porcentaje_aporte, sexo = "F"
-))
+# attach(afil_hombres)
+# afil_hombres$Liquidacion <- unlist(mapply(
+#  FUN = liquidacion, edad = Edad,
+#  salario_actual = Salario, antiguedad = Antiguedad,
+#  i = interes, inflacion = inflacion, aumento_real,
+#  porcentaje_aporte = porcentaje_aporte, sexo = "M"
+# ))
+# attach(afil_mujeres)
+# afil_mujeres$Liquidacion <- unlist(mapply(
+#  FUN = liquidacion, edad = Edad,
+#  salario_actual = Salario, antiguedad = Antiguedad,
+#  i = interes, inflacion = inflacion, aumento_real,
+#  porcentaje_aporte = porcentaje_aporte, sexo = "F"
+# ))
 ```
 
 
 
 
 
+
+
+## Calculo de costos de liquidación y continuación 18 meses
+
 ```{r}
-DecrementosIV <-
-  function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento, tasa_cre_salario, decremento){
-    
-    
-    Edad=afil_hombres$Edad[1]
-    hombre=TRUE
-    antiguedad=afil_hombres$Antiguedad[1]
-    ultimo_salario=afil_hombres$Salario[1]
-    tasa_descuento=0.07
-    decremento=2
-    
-    
-    datosPersonas<-cbind(Edad,antiguedad,ultimo_salario)
-    Edades<-min(Edad):max(Edad)
-    v<-(1)/(1+tasa_descuento)
-    datosPorEdades<-data.frame()
-    
-    #La funcion beneficio aun no ha sido definida
-    vectoraguinaldo<-c(rep(0,10),1,0)
-    PV<-0
-    GuardarSuma<-data.frame(matrix(nrow = 116*12, ncol =length(Edades) ))
-    if(hombre){
-      for (i in 1:length(Edades)) {
-        i=1
-        for(k in 0:(115-Edades[i])){
-          k=1
-          vectorMensual<-(seq(1/12, (115-Edades[i]+1-k), 1/12))
-          vectorAnualmensual<-sort(rep(c(0:(115-Edades[i]-k)),12))
-          
-          anualidad <-pxt(ListaDeTablasHombres[[(Edades[i]+1)]],x=Edades[i]+k,t=vectorMensual)*
-            (v)^(vectorMensual)
-          suma1 <- anualidad * (1+0.04)^(vectorAnualmensual)*2^vectoraguinaldo
-          GuardarSuma[k+1]<-c(suma1, rep(0, 116*12-length(suma1)))
-        }
-        datosPorEdades<-cbind(datosPorEdades, GuardarSuma)
-      }
+# Costo liquidacion de hombres
+liquidacion_h <- mapply(
+  FUN = liquidacion,
+  edad = edades_h, salario_actual = salarios_h, antiguedad = antiguedades_h,
+  i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte,
+  sexo = TRUE
+)
+# Por invalidez
+salida_invalidez_h_18 <- DecrementosIV(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 1, 1)
+# Por jubilacion
+salida_jubilacion_h_18 <- DecrementosIV(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 2, 1)
+# Por muerte
+salida_muerte_h_18 <- DecrementoM(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 1)
 
-      
-      datosPersonas(Edad,antiguedad,ultimo_salario)
-      datosPersonas$VP<-1
-      for (i in 1:length(datosPersonas$Edad)) {
-        for(k in 0:(115-datosPersonas$Edad[i])){
-        suma1<-sum(datosPorEdades[k,Edad]* beneficio(datosPersonas$antiguedad[i],decremento,datosPersonas$ultimo_salario[i],k))
-        PV <- PV + suma1*v^(k+1)*pxt(MDListaDeTablasHombres[[Edad+1]],x=datosPersonas$Edad[i],t=k)*
-          qxt(MDListaDeTablasHombres[[datosPersonas$Edad[i]+1]],x=Edad+k ,t=1, decrement=decremento)
-        }
-        datosPersonas$VP[i]<-PV
-      }
+salida_total_hombres_18 <- salida_invalidez_h_18 + salida_jubilacion_h_18 + salida_muerte_h_18 + liquidacion_h
+
+afil_hombres$Costo_plan_18 <- salida_total_hombres_18
+
+suma_invalidez_h_18 <- sum(salida_invalidez_h_18)
+suma_jublicacion_h_18 <- sum(salida_jubilacion_h_18)
+suma_muerte_h_18 <- sum(salida_muerte_h_18)
+suma_liquidacion_h <- sum(liquidacion_h)
+suma_total_h_18 <- sum(afil_hombres$Costo_plan_18) + pensionados_h
 
 
-    }
-    return(datosPersonas)
-  }
+# Costo liquidacion de mujeres
+liquidacion_m <- mapply(
+  FUN = liquidacion,
+  edad = edades_m, salario_actual = salarios_m, antiguedad = antiguedades_m,
+  i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte,
+  sexo = FALSE
+)
+# Por invalidez
+salida_invalidez_m_18 <- DecrementosIV(edades_m, TRUE, antiguedades_m, salarios_m, tasa_descuento, tasa_crecimiento_r, 1, 1)
+# Por jubilacion
+salida_jubilacion_m_18 <- DecrementosIV(edades_m, TRUE, antiguedades_m, salarios_m, tasa_descuento, tasa_crecimiento_r, 2, 1)
+# Por muerte
+salida_muerte_m_18 <- DecrementoM(edades_m, TRUE, antiguedades_m, salarios_m, tasa_descuento, tasa_crecimiento_r, 1)
 
+salida_total_mujeres_18 <- salida_invalidez_m_18 + salida_jubilacion_m_18 + salida_muerte_m_18 + liquidacion_m
+
+afil_mujeres$Costo_plan_18 <- salida_total_mujeres_18
+
+suma_invalidez_m_18 <- sum(salida_invalidez_m_18)
+suma_jublicacion_m_18 <- sum(salida_jubilacion_m_18)
+suma_muerte_m_18 <- sum(salida_muerte_m_18)
+suma_liquidacion_m <- sum(liquidacion_m)
+suma_total_m_18 <- sum(afil_mujeres$Costo_plan_18) + pensionados_m
+```
+
+
+Se procede a construir una tabla en la cual se muestran los Resultados
+
+```{r}
+# Empleados activos
+hombres_activos <- c(suma_invalidez_h, suma_jublicacion_h, suma_muerte_h, suma_invalidez_h + suma_jublicacion_h + suma_muerte_h, pensionados_h, suma_total_h)
+mujeres_activos <- c(suma_invalidez_m, suma_jublicacion_m, suma_muerte_m, suma_invalidez_m + suma_jublicacion_m + suma_muerte_m, pensionados_m, suma_total_m)
+
+
+# Liquidacion
+hombres_liquidacion <- c(suma_invalidez_h_18, suma_jublicacion_h_18, suma_muerte_h_18, suma_liquidacion_h, suma_invalidez_h_18 + suma_jublicacion_h_18 + suma_muerte_h_18 + suma_liquidacion_h, pensionados_h, suma_total_h_18)
+mujeres_liquidacion <- c(suma_invalidez_m_18, suma_jublicacion_m_18, suma_muerte_m_18, suma_liquidacion_m, suma_invalidez_m_18 + suma_jublicacion_m_18 + suma_muerte_m_18 + suma_liquidacion_m, pensionados_m, suma_total_m_18)
+
+# Montos
+etiquetas <- c("Invalidez", "Jubilación", "Muerte", "Subtotal", "En curso de pago", "Total")
+
+costos_liquidacion <- c(suma_total_h_18, suma_total_m_18, suma_total_h_18 + suma_total_m_18)
+
+tabla_resultados <- data.frame("Etiquetas" = etiquetas, "Hombres" = hombres_activos, "Mujeres" = mujeres_activos)
+tabla_resultados %<>% mutate("Total" = Hombres + Mujeres)
+print(xtable(tabla_resultados, type = "latex", tabular.environment = "longtable"),
+  format.args = list(big.mark = ",", decimal.mark = "."),
+  file = "tabla_resultados.tex"
+)
+etiquetas_liquidacion <- c("Invalidez", "Jubilación", "Muerte", "Liquidación", "Subtotal", "En curso de pago", "Total")
+tabla_liquidacion <- data.frame("Etiquetas" = etiquetas_liquidacion, "Hombres" = hombres_liquidacion, "Mujeres" = mujeres_liquidacion)
+tabla_liquidacion %<>% mutate("Total" = Hombres + Mujeres)
+print(xtable(tabla_liquidacion, type = "latex", tabular.environment = "longtable"),
+  format.args = list(big.mark = ",", decimal.mark = "."),
+  file = "tabla_liquidacion.tex"
+)
+
+# Resultados comparativos entre planes de beneficios
+proporciones <- c(suma_total_h_18 / suma_total_h, suma_total_m_18 / suma_total_m, (suma_total_m_18 + suma_total_h_18) / (suma_total_h + suma_total_m))
+tabla_proporciones <- data.frame("Hombres" = proporciones[1], "Mujeres" = proporciones[2], "Total" = proporciones[3])
+print(xtable(tabla_proporciones, type = "latex", tabular.environment = "longtable"),
+  format.args = list(big.mark = ",", decimal.mark = "."),
+  file = "tabla_proporciones.tex"
+)
 ```
 
 
 
+
+
+## Compartiva de costos por antigüedad
 ```{r}
-MontoParaMujeresDeterministicoV <-
-    DecrementosIV(
-    afil_hombres$Edad[1],
-    TRUE,
-    afil_hombres$Antiguedad[1],
-    afil_hombres$Salario[1],
-    0.07,
-    56,
-    2)
+suma_costos_ant_h <- afil_hombres %>%
+  group_by(Antiguedad) %>%
+  summarise(
+    Montos_plan = sum(Costo_plan),
+    Montos_liquidacion = sum(Costo_plan_18)
+  )
+suma_costos_ant_m <- afil_mujeres %>%
+  group_by(Antiguedad) %>%
+  summarise(
+    Montos_plan = sum(Costo_plan),
+    Montos_liquidacion = sum(Costo_plan_18)
+  )
+
+
+
+suma_costos_ant <- merge(suma_costos_ant_h, suma_costos_ant_m,
+  by = "Antiguedad", all.x = TRUE
+)
+suma_costos_ant[is.na(suma_costos_ant)] <- 0
+suma_costos_ant %<>% mutate(
+  Montos_plan = Montos_plan.x + Montos_plan.y,
+  Montos_liquidacion = Montos_liquidacion.x + Montos_liquidacion.y,
+  .keep = "unused"
+) %>% mutate(Proporcion = Montos_liquidacion / Montos_plan*100)
+
+
+print(xtable(suma_costos_ant, type = "latex", tabular.environment = "longtable"),
+  format.args = list(big.mark = ",", decimal.mark = "."),
+  file = "suma_costos_ant.tex"
+)
+
+# suma_costos_edad %<>% mutate(Edad = factor(Edad, levels = suma_costos_edad$Edad)) %>% arrange(Edad)
+grafico_barras_ant <- suma_costos_ant %>% ggplot() +
+  geom_bar(aes(x = Antiguedad, y = Proporcion),
+    stat = "identity",
+    position = position_dodge(),
+    fill = "red",
+    width = 0.8
+  ) +
+  scale_x_continuous(name = "Antigüedad", breaks = seq(min(suma_costos_ant$Antiguedad), max(suma_costos_ant$Antiguedad), 5)) +
+  scale_y_continuous(name = "Porcentaje", breaks = seq(0, 100, 10)) +
+  theme_minimal()+theme(axis.text.x = element_text(size=15),
+          axis.text.y = element_text(size=15),
+          axis.title.x = element_text(size=20),
+          axis.title.y = element_text(size=20)
+  )
+grafico_barras_ant
+ggsave("grafico_barras_ant.eps")
+```
+
+# Compartiva de costos por grupo etario
+
+```{r}
+suma_costos_edad_h <- afil_hombres %>%
+  group_by(Edad) %>%
+  summarise(
+    Montos_plan = sum(Costo_plan),
+    Montos_liquidacion = sum(Costo_plan_18)
+  )
+suma_costos_edad_m <- afil_mujeres %>%
+  group_by(Edad) %>%
+  summarise(
+    Montos_plan = sum(Costo_plan),
+    Montos_liquidacion = sum(Costo_plan_18)
+  )
+
+
+
+suma_costos_edad <- merge(suma_costos_edad_h, suma_costos_edad_m,
+  by = "Edad", all.x = TRUE
+)
+suma_costos_edad[is.na(suma_costos_edad)] <- 0
+suma_costos_edad %<>% mutate(
+  Montos_plan = Montos_plan.x + Montos_plan.y,
+  Montos_liquidacion = Montos_liquidacion.x + Montos_liquidacion.y,
+  .keep = "unused"
+) %>% mutate(Proporcion = Montos_liquidacion / Montos_plan * 100)
+
+
+
+
+grafico_barras_edad <- suma_costos_edad %>% ggplot() +
+  geom_bar(aes(x = Edad, y = Proporcion),
+    stat = "identity",
+    position = position_dodge(),
+    fill = "red",
+    width = 0.8
+  ) +
+  scale_x_continuous(name = "Edad", breaks = seq(min(suma_costos_edad$Edad), max(suma_costos_edad$Edad), 5)) +
+  scale_y_continuous(name = "Porcentaje", breaks = seq(0, 100, 10)) +
+  theme_minimal()+theme(axis.text.x = element_text(size=15),
+          axis.text.y = element_text(size=15),
+          axis.title.x = element_text(size=20),
+          axis.title.y = element_text(size=20)
+  )
+
+
+
+
+grafico_barras_edad
+ggsave("grafico_barras_edad.eps")
+```
+
+
+```{r}
+tabla_conjunta<- rbind(afil_hombres,afil_mujeres)
+k<-quantile(tabla_conjunta$Salario/1000,seq(0,1,length.out=15))#nclass.Sturges(tabla_conjunta$Salario/1000)
+
+tabla_conjunta$Intervalos<-cut(tabla_conjunta$Salario/1000,breaks=k,include.lowest=TRUE,dig.lab=5)
+
+#Grafico de barras salario
+suma_costos_salario <- tabla_conjunta %>%
+  group_by(Intervalos) %>%
+  summarise(
+    Montos_plan = sum(Costo_plan),
+    Montos_liquidacion = sum(Costo_plan_18)
+  )
+
+
+
+
+
+
+suma_costos_salario %<>% mutate(Proporcion = Montos_liquidacion / Montos_plan * 100)
+
+
+
+
+grafico_barras_salario <- suma_costos_salario %>% ggplot() +
+  geom_bar(aes(x = Intervalos, y = Proporcion),
+    stat = "identity",
+    position = position_dodge(),
+    fill = "red",
+    width = 0.8
+  ) +
+  theme_minimal(
+
+  )+theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1,size=15),
+          axis.text.y = element_text(size=15),
+          axis.title.x = element_text(size=20),
+          axis.title.y = element_text(size=20)
+  )+xlab('Salario en miles de colones')+ylab('Porcentaje')
+
+
+
+
+grafico_barras_salario
+ggsave("grafico_barras_salario.eps")
+
 ```
 
 
