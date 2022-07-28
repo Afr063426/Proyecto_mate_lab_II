@@ -321,124 +321,20 @@ RebajoFondosInsuficientes <- function(MontodePension) {
 }
 ```
 
-## Escala salarial
-
-```{r}
-# Aqui voy a programar la tabla de escala salarial
-# se debe hacer por sexo y por edad
-# de momentos se calculará el promedio por edad
-# Se estima una función lineal entre los dos puntos que faltan
-# Pensando si hacerlo por splines
-media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Edad), FUN = mean)
-media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Edad), FUN = mean)
-j <- 2
-while (j <= nrow(media_mujeres)) {
-  diferencia <- media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1]
-  if (diferencia != 1) {
-    m <- (media_mujeres$x[j] - media_mujeres$x[j - 1]) /
-      (media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1])
-    b <- media_mujeres$x[j] - m * media_mujeres$Group.1[j]
-    edad_faltantes <- media_mujeres$Group.1[j - 1] + (1:(diferencia - 1))
-    montos <- m * edad_faltantes + b
-    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
-    media_mujeres <- rbind(media_mujeres[1:j - 1, ], faltantes, media_mujeres[j:nrow(media_mujeres), ])
-  }
-  j <- j + 1
-}
-j <- 2
-while (j <= nrow(media_hombres)) {
-  diferencia <- media_hombres$Group.1[j] - media_hombres$Group.1[j - 1]
-  if (diferencia != 1) {
-    m <- (media_hombres$x[j] - media_hombres$x[j - 1]) /
-      (media_hombres$Group.1[j] - media_hombres$Group.1[j - 1])
-    b <- media_hombres$x[j] - m * media_hombres$Group.1[j]
-    edad_faltantes <- media_hombres$Group.1[j - 1] + (1:(diferencia - 1))
-    montos <- m * edad_faltantes + b
-    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
-    media_hombres <- rbind(media_hombres[1:j - 1, ], faltantes, media_hombres[j:nrow(media_hombres), ])
-  }
-  j <- j + 1
-}
-# Mujeres
-edad_m <- max(media_mujeres$Group.1)
-sal_m <- rep(max(media_mujeres$x), 85 - edad_m)
-sal_m <- data.frame(Group.1 = c((edad_m + 1):85, 18), x = c(sal_m, media_mujeres$x[1]))
-media_mujeres %<>% rbind(sal_m)
-
-# Hombres
-edad_h <- max(media_hombres$Group.1)
-sal_h <- rep(max(media_hombres$x), 85 - edad_h)
-sal_h <- data.frame(Group.1 = (edad_h + 1):85, x = sal_h)
-media_hombres %<>% rbind(sal_h)
-
-# Ordenamiento
-media_mujeres <- media_mujeres[order(media_mujeres$Group.1), ]
-media_hombres <- media_hombres[order(media_hombres$Group.1), ]
-
-# Unificacion
-escala <- data.frame(Edad = 18:85, Hombres = media_hombres$x, Mujeres = media_mujeres$x)
-min_m <- escala$Mujeres[1]
-min_h <- escala$Hombres[1]
-escala %<>% mutate(Hombres = Hombres / min_h, Mujeres = Mujeres / min_m)
-write.csv(escala, "./Escala_edad.csv", row.names = FALSE)
-```
 
 
-## Caso por antigüedad 
-
-```{r}
-media_mujeres <- aggregate(afil_mujeres$Salario, list(afil_mujeres$Antiguedad), FUN = mean)
-media_hombres <- aggregate(afil_hombres$Salario, list(afil_hombres$Antiguedad), FUN = mean)
-j <- 2
-while (j <= nrow(media_mujeres)) {
-  diferencia <- media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1]
-  if (diferencia != 1) {
-    m <- (media_mujeres$x[j] - media_mujeres$x[j - 1]) /
-      (media_mujeres$Group.1[j] - media_mujeres$Group.1[j - 1])
-    b <- media_mujeres$x[j] - m * media_mujeres$Group.1[j]
-    edad_faltantes <- media_mujeres$Group.1[j - 1] + (1:(diferencia - 1))
-    montos <- m * edad_faltantes + b
-    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
-    media_mujeres <- rbind(media_mujeres[1:j - 1, ], faltantes, media_mujeres[j:nrow(media_mujeres), ])
-  }
-  j <- j + 1
-}
-j <- 2
-while (j <= nrow(media_hombres)) {
-  diferencia <- media_hombres$Group.1[j] - media_hombres$Group.1[j - 1]
-  if (diferencia != 1) {
-    m <- (media_hombres$x[j] - media_hombres$x[j - 1]) /
-      (media_hombres$Group.1[j] - media_hombres$Group.1[j - 1])
-    b <- media_hombres$x[j] - m * media_hombres$Group.1[j]
-    edad_faltantes <- media_hombres$Group.1[j - 1] + (1:(diferencia - 1))
-    montos <- m * edad_faltantes + b
-    faltantes <- data.frame(Group.1 = edad_faltantes, x = montos)
-    media_hombres <- rbind(media_hombres[1:j - 1, ], faltantes, media_hombres[j:nrow(media_hombres), ])
-  }
-  j <- j + 1
-}
-
-media_mujeres <- rbind(media_mujeres, data.frame(Group.1 = c(45, 46), x = rep(media_mujeres$x[nrow(media_mujeres)])))
-escala_antiguedad <- data.frame(Antiguedad = 0:46, Hombres = media_hombres$x, Mujeres = media_mujeres$x)
-min_h <- escala_antiguedad$Hombres[1]
-min_m <- escala_antiguedad$Mujeres[1]
-escala_antiguedad %<>% mutate(Hombres = Hombres / min_h, Mujeres = Mujeres / min_m)
-write.csv(escala_antiguedad, "./Escala_antiguedad.csv", row.names = FALSE)
-```
 
 
-# Estadistica
 
-```{r}
-# Ejemplo esperanza de vida
-Edad <- 30
-exn(ListaDeTablasHombres[[Edad + 1]], x = Edad, type = "curtate")
-```
+
 
 
 
 # Estocástico
 
+Las funciones del modelo estocástico no fueron ejecutadas para el HTML, pero se pueden ver los resultados
+obtenidos, en tres archivos que son Costos estocástico hombres por grupo etario.csv, 
+Costos estocástico mujeres por grupo etario.csv y output.txt (pensiones en curso de pago).
 
 ## Personal activo
 
@@ -454,7 +350,7 @@ Primero, se programa una función que calcula el salario de referencia para el c
 
 Esta función se utiliza en el algortimo de Bacinello (1986) para calcular el salario de referencia una vez simulado que ocurre un decremeno en $k$ años.
 
-```{r Funciones para calcular salarios de referencia}
+```{r Funciones para calcular salarios de referencia, eval = FALSE}
 
 salario_referencia <- function(antiguedad, salario, k, n=5){
   
@@ -497,7 +393,8 @@ que corresponde al $p$-cuantil de $X$. Esta función se utiliza en el algortimo 
 
 -`p`: probabilidad de la cual se quiere calcular el cuantil
 
-```{r Función para localizar cuantiles en modelo estocástico}
+```{r Función para localizar cuantiles en modelo estocástico, eval = FALSE
+}
 
 hallar_cuantil <- function(distribucion, p) {
   if(p>max(distribucion)){k <- length(distribucion)-1}
@@ -510,7 +407,8 @@ hallar_cuantil <- function(distribucion, p) {
 
 #### Ejemplo
 
-```{r, echo=F}
+```{r, echo=F, eval = FALSE
+}
 
 set.seed(8000) 
 ```
@@ -539,7 +437,8 @@ En el modelo estocástico para las personas afiliadas, será necesario calcular 
 
 La msima retorna un número, que corresponde al valor de la anualidad, suponiendo pagos mensuales de una unidad actualizados anualmente por inflación.
 
-```{r Función anualidad para modelo estocástico}
+```{r Función anualidad para modelo estocástico, eval = FALSE
+}
 
 # Se crea una función para calcular el monto de los beneficios si ocurre un decremento tras k años y la persona vive t años adicionales
 valor_anualidad <- function(k, t, v=1/1.07) {
@@ -577,7 +476,8 @@ Asimismo, esta función retorna un vector de cuatro entradas, correspondiente al
 
 ### Versión con simulación individual
 
-```{r Modelo estocástico individual}
+```{r Modelo estocástico individual, eval = FALSE
+}
 
 costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, cant_simulaciones, lista_tablas_decrementos, lista_tablas_mortalidad) {
   x <- edad
@@ -716,7 +616,8 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
 
 Se calcula una simulación con la primera mujer de la tabla y 100 simulaciones.
 
-```{r Ejemplo del uso de la función}
+```{r Ejemplo del uso de la función, eval = FALSE
+}
 
 i <- 1
 cant_simulaciones<-100
@@ -757,7 +658,8 @@ edad, es decir, es una lista de objetos tipo "mdt".
 Asimismo, esta función retorna un vector de cuatro entradas, correspondiente al cálculo del costo para el plan de la Compañía asociado a al grupo de una misma edad de acuerdo al método estocástico según, en orden, los riesgos de invalidez, jubilación y muerte, teniendo por cuarta entrada la suma de las anteriores.
 
 
-```{r Modelo estocástico por grupos de edad}
+```{r Modelo estocástico por grupos de edad, eval = FALSE
+}
 
 costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima, antiguedades, cant_simulaciones, lista_tablas_decrementos, lista_tablas_mortalidad) {
   x <- edad
@@ -977,7 +879,8 @@ costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima,
 
 Se realiza el cálculo para el grupo de mujeres de 46 años con 1000 simulaciones.
 
-```{r}
+```{r, eval = FALSE
+}
 edad <- 46
 datos <- afil_mujeres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
 salarios <- datos$Salario
@@ -1032,6 +935,7 @@ i <- i+1
 }
 proc.time()-t
 colnames(costos_grupal_estoc_m) <- c("Invalidez", "Jubilación", "Muerte", "Total")
+#Se escribe un csv con los resultados
 write.csv(costos_grupal_estoc_m,"Costos estocástico mujeres por grupo etario.csv", row.names = FALSE)
 
 ```
@@ -1047,7 +951,8 @@ Se ha creado una función para el calculo estocástico de las pensiones en curso
 `t_descuento` (numeric): tasa utilizada para llevar montos a valor presente.
 `m` (numeric): la cantidad de pagos que se relizan al año.
 `simulaciones`(numeric): número de simulaciones deseadas.
-```{r}
+
+```{r, eval = FALSE}
 pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
   v <- 1 / (1 + t_descuento)
   # aumento<-(1+0.03)*(1+aumento_real)
@@ -1086,7 +991,7 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 
 ## Calculo de pension estocastico
 
-```{r}
+```{r, eval = FALSE}
 #Resultado de los pensionados
 ##Mujeres
 (pension_pen_m <- pension_pen(pen_mujeres, FALSE, 0.07, 12, 1000))
@@ -1229,7 +1134,7 @@ MontoDePensionMensualParaMujeresDeterministicoPensionados <-
 ## Comparativa pensiones en curso de pago modelo estocástico y determinístico
 Se estima el error relativo del modelo estocástico respecto al deterministico, de las pensiones en curso de pago
 
-```{r}
+```{r, eval=FALSE}
 ##Total de modelo deterministico
 total_determistico <- pensionados_m + pensionados_h
 
@@ -1803,7 +1708,11 @@ ggsave("grafico_barras_salario.eps")
 
 
 # Ajustes para poder reducir los costos
-En esta sección se realizaron distintos cambios al código para poder 
+En esta sección se realizaron distintos cambios al código para poder ajustar los costos, buscando un 0.015 como prima media nivelada. 
+Se muestra al final una tabla con los resultados tras trabajar con el código.
+Se añade a `beneficio` la variable:
+
+`n` (numeric): numero de salarios que se toman de forma anual para el promedio.
 
 ```{r}
 #Porcentaje de salario de tal forma que de acuerdo a la antiguedad se hace antiguedad/100 desde edad 5 hasta edad 35.
@@ -1817,6 +1726,9 @@ porcentaje_de_pension <- function(antiguedad) {
       return(0)
     }
 }
+
+#Se agrega un paramtro para determianr cual es la cantidad de salarios que se toman para el promedio
+#y se coloca un tope de 1,500,000 como monto que se puede recibir de salida
 beneficio <- function(antiguedad, decremento, salario, k, n = 5) { 
   antiguedad <- antiguedad + k 
   # invalidez 
@@ -1836,5 +1748,134 @@ beneficio <- function(antiguedad, decremento, salario, k, n = 5) {
 } 
 ```
 
+## Distintos escenarios de reservas
+Se programó una función en la cuál se estiman cuales hubieran sido los valores de reservas
+si se hubieran cobrado distintos montos desde que se ingresó a la compañía.
+`reservas` es la función creada para estimar estas reservas que se hubieran obtenido, recibe:
+`edad` (numeric): edad cumplida por el individuo al momento de valoración.
+`salario_actual` (numeric): salario que recibe al momento de valoración.
+`antiguedad` (numeric): número de años cumplidos desde que se ingresó a la empresa.
+`i` (numeric): tasa empleada para estimar el valor presente.
+`inflacion` (numeric): inflación de largo plazo.
+`aumento_real` (numeric): aumento real de los salarios.
+`porcentaje_aporte` (numeric): porcentaje de aporte que se supone realizó desde que se ingresó,
+sobre los salarios.
+`sexo` (boolean): indica si el individuo es hombre (`TRUE`) o mujer (`FALSE`).
+
+```{r}
+#Funcion para calculo de reservas 
+reservas <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_real, porcentaje_aporte, sexo) { 
+ 
+    v <- 1 / (1 + i) 
+    # Para estimar el aumento que se le hizo al salario inicial hasta el momento 
+    aumento <- (1 + inflacion) * (1 + aumento_real) 
+ 
+    # Salario con el que se inició 
+    salario_inicial <- salario_actual * (aumento)^(-antiguedad) * porcentaje_aporte 
+ 
+    # Salarios que han sido pagados para el momento de la liquidación 
+    salarios <- salario_inicial * aumento^(0:(antiguedad )) 
+    salarios <- sort(rep(salarios, 12)) 
+    # Se crea un vector con 12 salarios de cada año 
+    descontado <- v^seq(1 / 12, antiguedad + 1, 1 / 12) * (1 + i)^(antiguedad + 1) 
+ 
+    # Se multiplica el descontado con los salarios pagados 
+    monto <- sum(salarios * descontado) 
+    if (!sexo) { 
+      p <- pxt1(MDListaDeTablasMujeres[[edad + 1]], x = edad, t = 2) 
+    } else if (sexo) { 
+      p <- pxt1(MDListaDeTablasHombres[[edad + 1]], x = edad, t = 2) 
+    } 
+    return(monto * p) 
+   
+} 
+ 
+#Calculo de reservas hombres 1.5%
+reservas_hombres<-mapply( 
+  FUN = reservas, 
+  edad = edades_h, salario_actual = salarios_h, antiguedad = antiguedades_h, 
+  i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte, 
+  sexo = TRUE 
+) 
+#Calculo de reservas mujeres 1.5%
+reservas_mujeres<-mapply( 
+  FUN = reservas, 
+  edad = edades_m, salario_actual = salarios_m, antiguedad = antiguedades_m, 
+  i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte, 
+  sexo = FALSE 
+) 
+#Total con aporte del 1.5%
+(reserva_total<- sum(reservas_hombres)+sum(reservas_mujeres))
+
+#Resevar con 5% de aportes
+aporte<- 0.05
+#Calculo de reservas hombres al 5%
+reservas_hombres_5<-mapply( 
+  FUN = reservas, 
+  edad = edades_h, salario_actual = salarios_h, antiguedad = antiguedades_h, 
+  i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = aporte, 
+  sexo = TRUE 
+) 
+#Calculo de reservas mujeres al 5%
+reservas_mujeres_5<-mapply( 
+  FUN = reservas, 
+  edad = edades_m, salario_actual = salarios_m, antiguedad = antiguedades_m, 
+  i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = aporte, 
+  sexo = FALSE 
+) 
+#Reseva al 5%
+(reserva_total_5<- sum(reservas_hombres_5)+sum(reservas_mujeres_5))
+```
+
+
+
+### Función masa salaria
+
+Se programa una función para estimar la masa salarial `cotizacionfutura`, recibe:
+`Edad` (numeric): edad cumplida a la fecha de valoración.
+`hombre` (boolean): indica si el individuo es hombre (`TRUE`) o mujer (`FALSE`).
+`ultimo_salario` (numeric): salario recibido en el año de valoración.
+`t` (numeric): omega de la tabla de mortalidad.
+`porcentaje_aporte`: indica el porcentaje que se quiere de los salarios futuros.
+
+```{r}
+cotizacionfutura <- function(Edad, hombre, ultimo_salario, t=117,porcentaje_aporte=1) {
+    v <- (1) / (1 + 0.07 )
+    if (hombre) {
+      t<-min(85-Edad,t)
+      salariosfuturos<-ultimo_salario * ((1 + 0.04)*(1+0.025))^(1:(t))*12*
+        pxt1(MDListaDeTablasHombres[[Edad+1]], x = Edad, t = (1:t))* v^(0:(t-1))
+        return(salariosfuturos*porcentaje_aporte)
+      } else {
+        t<-min(77-Edad,t)
+      salariosfuturos<-ultimo_salario * ((1 + 0.04)*(1+0.025))^(1:(t))*12*
+        pxt1(MDListaDeTablasMujeres[[Edad+1]], x = Edad, t = (1:t))* v^(0:(t-1))
+        return(salariosfuturos*porcentaje_aporte)
+      }  
+    }
+#Se calcula el monto para las mujers y para los hombres
+SalariosM<-mapply( cotizacionfutura,  afil_mujeres$Edad, FALSE, afil_mujeres$Salario)
+SalariosH<-mapply( cotizacionfutura,  afil_hombres$Edad, TRUE, afil_hombres$Salario)
+```
+
+Se muestran algunos de los resultados obtenidos
+
+
+```{r}
+CostoTotal<-sum(afil_mujeres$Costo_plan)+sum(afil_hombres$Costo_plan)
+#Valor de la masa salarial
+(ValorPresenteDeMasaSalarial<-(sum(unlist(SalariosM))+sum(unlist(SalariosH))))
+
+#Reserva necesaria 
+(reservaNecesaria<- CostoTotal-0.015*(sum(unlist(SalariosM))+sum(unlist(SalariosH))))
+
+#Caso uno solo le dan un 0.008 del beneficio
+(pi_1<-(CostoTotal*0.08)/ValorPresenteDeMasaSalarial)
+#Caso uno solo le dan una reserva al 5% de contribuciones anteriores
+(pi_2<-(CostoTotal*0.525-reserva_total_5)/ValorPresenteDeMasaSalarial)
+
+#Caso original
+(CostoTotal/ValorPresenteDeMasaSalarial)
+```
 
 
