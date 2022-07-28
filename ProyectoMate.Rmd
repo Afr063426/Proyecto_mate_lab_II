@@ -1261,7 +1261,8 @@ La siguiente funcion es la empleada para calcular el costo del beneficio obtenid
 `tasa_decuento` (numeric): tasa empleada para calcular los montos a valor presente.
 `tasa_cre_salario` (numeric): es la tasa real de crecimiento salarial.
 `decremento` (numeric): es el número de decremento que se quiere valorar.
-`n` (numeric): indica el tiempo en el que puede recibir
+`n` (numeric): indica el tiempo en el que puede recibir la pensión. Si se coloca $n=1$ se tiene el individuo puede recibir la pensión
+en el periodo en tránsito y el año siguiente.
 
 
 
@@ -1337,14 +1338,20 @@ DecrementosIV <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuen
 ```
 
 
-```{r}
-DecrementosIV2(afil_mujeres$Edad, FALSE, afil_mujeres$Antiguedad, afil_mujeres$Salario, 0.07, 0, 1)
-```
+
 
 
 ## Funcion decremento muerte
+Se programa la función para estimar la anualidad cierta de 10 años obtenida tras la muerte del individuo `DecrementoM`, recibe los parámetros:
 
-
+`Edad` (numeric): es la edad cumplida por el individuo.
+`hombre` (boolean): indica si el individuo es hombre (`TRUE`) o mujer (`FALSE`).
+`antiguedad` (numeric): es el tiempo que lleva el individuo laborando en la empresa.
+`ultimo_salario` (numeric): último salario que está recibiendo el individuo.
+`tasa_decuento` (numeric): tasa empleada para calcular los montos a valor presente.
+`tasa_cre_salario` (numeric): es la tasa real de crecimiento salarial.
+`n` (numeric): indica el tiempo en el que puede recibir la pensión. Si se coloca $n=1$ se tiene el individuo puede recibir la pensión
+en el periodo en tránsito y el año siguiente.
 
 ```{r}
 
@@ -1405,6 +1412,9 @@ DecrementoM <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento
 ```
 
 ## Calculo de personas activas IVM
+
+En esta parte se realiza el cálculo del costo de las pensiones.
+
 ```{r} 
 # Calculo de lo montos para hombres
 edades_h <- afil_hombres$Edad
@@ -1427,7 +1437,9 @@ afil_hombres$Costo_plan <- salida_total_hombres
 suma_invalidez_h <- sum(salida_invalidez_h)
 suma_jublicacion_h <- sum(salida_jubilacion_h)
 suma_muerte_h <- sum(salida_muerte_h)
-suma_total_h <- sum(afil_hombres$Costo_plan) + pensionados_h
+
+#Se imprime y calcula el monto total del costo de las pensiones en curso de pago y la de los empleados activos hombres.
+(suma_total_h <- sum(afil_hombres$Costo_plan) + pensionados_h)
 
 ### Mujeres
 edades_m <- afil_mujeres$Edad
@@ -1452,22 +1464,33 @@ afil_mujeres$Costo_plan <- salida_total_mujeres
 suma_invalidez_m <- sum(salida_invalidez_m)
 suma_jublicacion_m <- sum(salida_jubilacion_m)
 suma_muerte_m <- sum(salida_muerte_m)
-suma_total_m <- sum(afil_mujeres$Costo_plan) + pensionados_m
+
+
+#Se imprime y calcula el monto total del costo de las pensiones en curso de pago y la de los empleados activos.
+(suma_total_m <- sum(afil_mujeres$Costo_plan) + pensionados_m)
 ```
 
 
 
 
+# Liquidación 
 
+En esta sección se programan las funciones necesarias para el cálculo de los costos de liquidación. 
+
+## Función para liquidación
+
+Se programa la función `liquidacion` que corresponde a la empleada para el cálculo de la liquidación dados los aportes que se debieron realizar, recibe:
+`edad` (numeric): la edad cumplida por el individuo.
+`salario_actual` (numeric): es el salario con el que cuenta actualmente el individuo.
+`antiguedad` (numeric): tiempo cumplido que lleva laborando en la empresa.
+`i` (numeric): tasa de decuento empleada para calcular los montos en valor presente.
+`inflacion` (numeric): inflación a largo plazo.
+`aumento_real` (numeric): aumento real que tienen los salarios.
+`porcentaje_aporte` (numeric): porcentaje de aportes que debieron realiza anteriormentes.
+`sexo` (boolean): indica si es hombre (`TRUE`) o mujer (`FALSE`).
 
 
 ```{r}
-# Ideas para eleboración de la función
-# Aqui se programara lo necesario para poder estimar los costos de liquidacion
-# Se toma solo aquellas personas que tengan menos de 22 años
-# Hay que pagar un 1.5% de los salarios que haya recibido
-# Se deberia estimar un pago que se debe hacer dentro de dos años
-
 liquidacion <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_real, porcentaje_aporte, sexo) {
   if (antiguedad + 2 <= 22) {
     v <- 1 / (1 + i)
@@ -1496,20 +1519,7 @@ liquidacion <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_
   }
 }
 
-# attach(afil_hombres)
-# afil_hombres$Liquidacion <- unlist(mapply(
-#  FUN = liquidacion, edad = Edad,
-#  salario_actual = Salario, antiguedad = Antiguedad,
-#  i = interes, inflacion = inflacion, aumento_real,
-#  porcentaje_aporte = porcentaje_aporte, sexo = "M"
-# ))
-# attach(afil_mujeres)
-# afil_mujeres$Liquidacion <- unlist(mapply(
-#  FUN = liquidacion, edad = Edad,
-#  salario_actual = Salario, antiguedad = Antiguedad,
-#  i = interes, inflacion = inflacion, aumento_real,
-#  porcentaje_aporte = porcentaje_aporte, sexo = "F"
-# ))
+
 ```
 
 
@@ -1518,57 +1528,69 @@ liquidacion <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_
 
 
 
-## Calculo de costos de liquidación y continuación 18 meses
+## Calculo de costos de liquidación
 
+Aquí se estima los costos de liquidación tomando en cuenta que se pueden pensionar dentro de los siguiente dos años y el costo de liquidar o trasladar los aportes
+en caso de que se llegue a pensionar.
 ```{r}
-# Costo liquidacion de hombres
+# Costo liquidacion de hombres que no se pensionan
 liquidacion_h <- mapply(
   FUN = liquidacion,
   edad = edades_h, salario_actual = salarios_h, antiguedad = antiguedades_h,
   i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte,
   sexo = TRUE
 )
-# Por invalidez
+#Monto invalidez hombres
 salida_invalidez_h_18 <- DecrementosIV(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 1, 1)
-# Por jubilacion
+
+#Monto por jubilacion hombres
 salida_jubilacion_h_18 <- DecrementosIV(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 2, 1)
-# Por muerte
+#Monto por muerte hombres
 salida_muerte_h_18 <- DecrementoM(edades_h, TRUE, antiguedades_h, salarios_h, tasa_descuento, tasa_crecimiento_r, 1)
 
+#Monto total 
 salida_total_hombres_18 <- salida_invalidez_h_18 + salida_jubilacion_h_18 + salida_muerte_h_18 + liquidacion_h
 
+#Se agregan a la tabla de los hombres
 afil_hombres$Costo_plan_18 <- salida_total_hombres_18
 
-suma_invalidez_h_18 <- sum(salida_invalidez_h_18)
-suma_jublicacion_h_18 <- sum(salida_jubilacion_h_18)
-suma_muerte_h_18 <- sum(salida_muerte_h_18)
-suma_liquidacion_h <- sum(liquidacion_h)
-suma_total_h_18 <- sum(afil_hombres$Costo_plan_18) + pensionados_h
+#Se imprime la suma de los montos
+(suma_invalidez_h_18 <- sum(salida_invalidez_h_18))
+(suma_jublicacion_h_18 <- sum(salida_jubilacion_h_18))
+(suma_muerte_h_18 <- sum(salida_muerte_h_18))
+(suma_liquidacion_h <- sum(liquidacion_h))
+(suma_total_h_18 <- sum(afil_hombres$Costo_plan_18) + pensionados_h)
 
 
-# Costo liquidacion de mujeres
+# Costo liquidacion de mujeres que no se pensionan
 liquidacion_m <- mapply(
   FUN = liquidacion,
   edad = edades_m, salario_actual = salarios_m, antiguedad = antiguedades_m,
   i = interes, inflacion = inflacion, aumento_real = aumento_real, porcentaje = porcentaje_aporte,
   sexo = FALSE
 )
-# Por invalidez
+
+#Monto por invalidez mujeres
 salida_invalidez_m_18 <- DecrementosIV(edades_m, TRUE, antiguedades_m, salarios_m, tasa_descuento, tasa_crecimiento_r, 1, 1)
-# Por jubilacion
+
+#Monto por jubilacionn mujeres
 salida_jubilacion_m_18 <- DecrementosIV(edades_m, TRUE, antiguedades_m, salarios_m, tasa_descuento, tasa_crecimiento_r, 2, 1)
-# Por muerte
+
+#Monto por muerte mujeres
 salida_muerte_m_18 <- DecrementoM(edades_m, TRUE, antiguedades_m, salarios_m, tasa_descuento, tasa_crecimiento_r, 1)
 
+#Monto total mujeres
 salida_total_mujeres_18 <- salida_invalidez_m_18 + salida_jubilacion_m_18 + salida_muerte_m_18 + liquidacion_m
 
+#Se agrega a la tabla de mujeres
 afil_mujeres$Costo_plan_18 <- salida_total_mujeres_18
 
-suma_invalidez_m_18 <- sum(salida_invalidez_m_18)
-suma_jublicacion_m_18 <- sum(salida_jubilacion_m_18)
-suma_muerte_m_18 <- sum(salida_muerte_m_18)
-suma_liquidacion_m <- sum(liquidacion_m)
-suma_total_m_18 <- sum(afil_mujeres$Costo_plan_18) + pensionados_m
+#Se imprimen los montos
+(suma_invalidez_m_18 <- sum(salida_invalidez_m_18))
+(suma_jublicacion_m_18 <- sum(salida_jubilacion_m_18)
+(suma_muerte_m_18 <- sum(salida_muerte_m_18))
+(suma_liquidacion_m <- sum(liquidacion_m))
+(suma_total_m_18 <- sum(afil_mujeres$Costo_plan_18) + pensionados_m)
 ```
 
 
@@ -1590,14 +1612,17 @@ etiquetas <- c("Invalidez", "Jubilación", "Muerte", "Subtotal", "En curso de pa
 costos_liquidacion <- c(suma_total_h_18, suma_total_m_18, suma_total_h_18 + suma_total_m_18)
 
 tabla_resultados <- data.frame("Etiquetas" = etiquetas, "Hombres" = hombres_activos, "Mujeres" = mujeres_activos)
-tabla_resultados %<>% mutate("Total" = Hombres + Mujeres)
+(tabla_resultados %<>% mutate("Total" = Hombres + Mujeres))
 print(xtable(tabla_resultados, type = "latex", tabular.environment = "longtable"),
   format.args = list(big.mark = ",", decimal.mark = "."),
   file = "tabla_resultados.tex"
 )
+
+
+#Tabla para la liquidacion
 etiquetas_liquidacion <- c("Invalidez", "Jubilación", "Muerte", "Liquidación", "Subtotal", "En curso de pago", "Total")
 tabla_liquidacion <- data.frame("Etiquetas" = etiquetas_liquidacion, "Hombres" = hombres_liquidacion, "Mujeres" = mujeres_liquidacion)
-tabla_liquidacion %<>% mutate("Total" = Hombres + Mujeres)
+(tabla_liquidacion %<>% mutate("Total" = Hombres + Mujeres))
 print(xtable(tabla_liquidacion, type = "latex", tabular.environment = "longtable"),
   format.args = list(big.mark = ",", decimal.mark = "."),
   file = "tabla_liquidacion.tex"
@@ -1605,7 +1630,7 @@ print(xtable(tabla_liquidacion, type = "latex", tabular.environment = "longtable
 
 # Resultados comparativos entre planes de beneficios
 proporciones <- c(suma_total_h_18 / suma_total_h, suma_total_m_18 / suma_total_m, (suma_total_m_18 + suma_total_h_18) / (suma_total_h + suma_total_m))
-tabla_proporciones <- data.frame("Hombres" = proporciones[1], "Mujeres" = proporciones[2], "Total" = proporciones[3])
+(tabla_proporciones <- data.frame("Hombres" = proporciones[1], "Mujeres" = proporciones[2], "Total" = proporciones[3]))
 print(xtable(tabla_proporciones, type = "latex", tabular.environment = "longtable"),
   format.args = list(big.mark = ",", decimal.mark = "."),
   file = "tabla_proporciones.tex"
@@ -1615,8 +1640,14 @@ print(xtable(tabla_proporciones, type = "latex", tabular.environment = "longtabl
 
 
 
+## Compartiva de costos del plan de beneficios y liquidación.
 
-## Compartiva de costos por antigüedad
+En esta sección se generan los gráficos para realizar la comparativa entre el costo del plan de beneficios y la liquidación. Para ello se presentan tres escenarios uno en 
+el que se agrupa por antigüedad, por edad y por salario. Para ello se calcula el cociente del costo de liquidación por grupo dividio entre el costo del plan de beneficios
+por grupo.
+
+### Por antigüedad
+
 ```{r}
 suma_costos_ant_h <- afil_hombres %>%
   group_by(Antiguedad) %>%
@@ -1668,7 +1699,7 @@ grafico_barras_ant
 ggsave("grafico_barras_ant.eps")
 ```
 
-# Compartiva de costos por grupo etario
+### Por grupo etario
 
 ```{r}
 suma_costos_edad_h <- afil_hombres %>%
@@ -1720,7 +1751,7 @@ grafico_barras_edad <- suma_costos_edad %>% ggplot() +
 grafico_barras_edad
 ggsave("grafico_barras_edad.eps")
 ```
-
+### Por intervalo salarial
 
 ```{r}
 tabla_conjunta<- rbind(afil_hombres,afil_mujeres)
@@ -1769,9 +1800,14 @@ ggsave("grafico_barras_salario.eps")
 
 ```
 
-#Cambios a funciones
+
+
+# Ajustes para poder reducir los costos
+En esta sección se realizaron distintos cambios al código para poder 
 
 ```{r}
+#Porcentaje de salario de tal forma que de acuerdo a la antiguedad se hace antiguedad/100 desde edad 5 hasta edad 35.
+#Y se deja en 0.4 más de 35 años
 porcentaje_de_pension <- function(antiguedad) {
     if(antiguedad>=5 && antiguedad < 35){
       return(antiguedad/100)
