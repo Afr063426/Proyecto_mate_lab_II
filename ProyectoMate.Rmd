@@ -546,8 +546,6 @@ salario_referencia <- function(antiguedad, salario, k, n=5){
   return(salario_ref)
 }
 
-salario_referencia(8, 10^4, 8)
-
 salario_referencia_multiple <- function(antiguedad, salario, k) {
   return(sapply(X = k, FUN = salario_referencia, antiguedad = antiguedad, salario = salario))
 }
@@ -610,6 +608,13 @@ set.seed(8000)
 plot(0:(xi-x-1), FWx) + abline(h = u, col="red") + abline(v = k, col="red")
 ```
 
+En el modelo estocástico para las personas afiliadas, será necesario calcular el valor de la pensión sabiendo que ocurre un decremento $k$ años después, a la edad $x+k$ y que, además, la persona vive hasta la edad $x+k+t$. Por ello, se programa la función `valor_anualidad`, que recibe los parámetros:
+
+-`k`: años tras los cuáles ocurre un decremento
+
+-`t`: años residuales de vida después de sufrido el decremento
+
+La msima retorna un número, que corresponde al valor de la anualidad, suponiendo pagos mensuales de una unidad actualizados anualmente por inflación.
 
 ```{r Función anualidad para modelo estocástico}
 
