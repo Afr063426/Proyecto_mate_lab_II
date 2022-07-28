@@ -1737,7 +1737,36 @@ ggsave("grafico_barras_salario.eps")
 
 ```
 
+#Cambios a funciones
 
+```{r}
+porcentaje_de_pension <- function(antiguedad) {
+    if(antiguedad>=5 && antiguedad < 35){
+      return(antiguedad/100)
+    }else if(antiguedad >= 35){
+      return(0.4)
+    }else if(antiguedad < 5){
+      return(0)
+    }
+}
+beneficio <- function(antiguedad, decremento, salario, k, n = 5) { 
+  antiguedad <- antiguedad + k 
+  # invalidez 
+  if (decremento == 1) { 
+    porcentaje_de_salario <- porcentaje_de_pension(antiguedad) * 0.6 
+    # vejez 
+  } else if (decremento == 2) { 
+    porcentaje_de_salario <- porcentaje_de_pension(antiguedad) 
+    # muerte 
+  } else if (decremento == 4) { 
+    porcentaje_de_salario <- porcentaje_de_pension(antiguedad) * 0.2 
+  } 
+  
+  beneficio<-salario_referencia(antiguedad - k, salario, k, n) / 12 * porcentaje_de_salario
+  beneficio<-min(beneficio, 1500000)
+  return(beneficio) 
+} 
+```
 
 
 
