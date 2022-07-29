@@ -34,19 +34,28 @@ library(kableExtra)
 library(xtable)
 library(stringr)
 library(magrittr) # uso de %<>% con funciones de dplyr
+library(forcats) 
+library(data.table) 
+library(formattable) 
+library(reshape2)
+
+
+
+
 # Para paralelizar
 # library(future.apply)
 # plan(multicore)
 # Para imprimir los datos en formato de tabla
-tblPrint <- function(tbl, cap = NULL) {
-  tbl %>%
-    kbl(caption = cap) %>%
-    kable_styling(
-      bootstrap_options = c("striped", "condensed"),
-      latex_options = "HOLD_position",
-      full_width = F
-    )
-}
+
+#Set a few color variables to make our table more visually appealing 
+ 
+customGreen0 = "#DeF7E9" 
+ 
+customGreen = "#71CA97" 
+ 
+customRed = "#ff7f7f" 
+ 
+
 # Se cargan las bases de datos
 Afiliados_31_12_2021 <- read_excel("Planilla_Compañia_31_12_2021.xlsx")
 Pensionados_31_12_2021 <- read_excel("Compañia_Pensionados_31_12_2021.xlsx", range = "A1:F5006")
@@ -203,7 +212,211 @@ Las tablas de decrementos constituyen
 
  
  
-# Funciones que nos sirven a todos
+# Análisis estadístico
+
+```{r}
+#cálculo de las Esperanzas de vida para cada empleado
+
+Afiliados_31_12_2021_2 <- Afiliados_31_12_2021%>%
+  mutate(Exn = ifelse(Sexo == "M",unlist(map2((Edad + 1), Edad, ~ exn(object = ListaDeTablasHombres[[.x]],x = .y,type = "curtate"))),unlist(map2((Edad + 1), Edad, ~ exn(object = ListaDeTablasMujeres[[.x]],x = .y,type = "curtate")))))
+
+
+Genero <- c(`F` = "Mujeres",`M` = "Hombres")
+
+pobAfi <- Afiliados_31_12_2021_2 %>% group_by(Edad, Exn,Sexo)%>%
+  summarize(Cantidad =  n())
+
+n <- sum(pobAfi$Cantidad[pobAfi$Sexo=="M"])
+m <- sum(pobAfi$Cantidad[pobAfi$Sexo=="F"])
+
+
+plot5 <- pobAfi %>% ggplot(aes(x=Edad, y=Cantidad, fill = Exn)) +
+  geom_bar(stat="identity") +
+  facet_grid(~Sexo, labeller = as_labeller(Genero))+
+  theme_minimal()+scale_fill_gradient(low="red", high="yellow")+
+  labs(fill='Esperanza de Vida', title = "", x = "Edad", y ="Cantidad de personas")
+
+ggsave("plot5.eps")
+plot5
+#cálculo de las Esperanzas de vida para cada jubilado 
+Pensionados_31_12_2021_2 <- Pensionados_31_12_2021%>%
+  mutate(Exn = ifelse(SEX == "M",unlist(map2((Edad + 1), Edad, ~ exn(object = ListaDeTablasHombres[[.x]],x = .y,type = "curtate"))),unlist(map2((Edad + 1), Edad, ~ exn(object = ListaDeTablasMujeres[[.x]],x = .y,type = "curtate")))))
+
+  
+  
+
+pobPen <- Pensionados_31_12_2021_2 %>% group_by(Edad, Exn,SEX)%>%
+  summarize(Cantidad =  n())
+
+n <- sum(pobPen$Cantidad[pobPen$SEX=="M"])
+m <- sum(pobPen$Cantidad[pobPen$SEX=="F"])
+
+
+
+plot4 <- pobPen %>% ggplot(aes(x=Edad, y=Cantidad, fill = Exn)) +
+  geom_col(stat="identity") +
+  facet_grid(~SEX, labeller = as_labeller(Genero))+
+  theme_minimal()+scale_fill_gradient(low="red", high="yellow")+
+  labs(fill='Esperanza de Vida', title = "", x = "Edad", y ="Cantidad de personas")
+plot4
+ggsave("plot4.eps")
+
+
+```
+
+
+
+```{r}
+library(readxl)
+library(data.table)
+library(dplyr)
+library(formattable)
+library(tidyr)
+library(xtable)
+
+#Set a few color variables to make our table more visually appealing
+
+customGreen0 = "#DeF7E9"
+
+customGreen = "#71CA97"
+
+customRed = "#ff7f7f"
+
+
+
+#Empleados
+tablaFrecuenciasSalarios <- read_excel("Planilla_Compania_31_12_2021.xlsx", 
+    sheet = "Frecuencia Salarios", range = "H4:L18")
+
+tablaFrecuenciasEdad <- read_excel("Planilla_Compania_31_12_2021.xlsx", 
+    sheet = "Frecuencia Edad", range = "F3:I16")
+
+tablaPromedios <- read_excel("Planilla_Compania_31_12_2021.xlsx", 
+    sheet = "Promedio Salarios", range = "F9:I12")
+
+formattable(tablaFrecuenciasEdad)
+formattable(tablaFrecuenciasEdad, 
+            align =c("l","c","c", "r"), 
+            list(`Rango de Edad` = formatter(
+              "span", style = ~ style(color = "grey",font.weight = "bold")))) 
+
+
+
+
+  
+
+#graficos 
+
+library(ggplot2)
+library(forcats)
+
+tablaFrecuenciasSalarios[1,1] <- "100,000-500,000"
+
+tablaFrecuenciasSalarios[13,1] <- "6,000,0001-8,000,000"
+
+tablaFrecuenciasSalarios <- melt(tablaFrecuenciasSalarios[-nrow(tablaFrecuenciasSalarios),c(1,2,3)] ,  id.vars = 'Rango Salarial', variable.name = 'Género')
+tablaFrecuenciasSalarios$`Rango Salarial`<- factor(tablaFrecuenciasSalarios$`Rango Salarial`, levels = c("500 o menos", "500-1,000", "1,000-1,500", "1,500-2,000", "2,000-2,500", "2,500-3,000", "3,000-3,500","3,500-4,000" ,"4,000-4,500", "4,500-5,000","5,000- 5,500", "5,500- 6,000", "6,000 o más"))
+
+plot1 <- tablaFrecuenciasSalarios%>%
+ggplot( aes( x = `Rango Salarial`, y = value  ))+
+  geom_col(aes(fill = Género), position = "dodge2")+
+  theme_minimal()+
+  labs(x = "miles de colones", y = "", fill = " ")+
+  theme(axis.text.x = element_text(angle = 90))+
+  scale_fill_brewer(palette = "Set1")
+
+
+
+ggsave("plot1.eps" )
+
+
+
+plot1
+
+
+
+#Pensionados 
+
+tablaFrecuenciasPensiones <- read_excel("Compania_Pensionados_31_12_2021.xlsx", 
+    sheet = "Frecuencias Salarios", range = "H3:L13")
+
+tablaFrecuenciasEdadPensionados <- read_excel("Compania_Pensionados_31_12_2021.xlsx", 
+    sheet = "Frecuencias Edades", range = "G3:J14")
+
+tablaPromediosPensionados <- read_excel("Compania_Pensionados_31_12_2021.xlsx", 
+    sheet = "Distribución Pensionados", range = "G3:J16")
+
+print(xtable(tablaFrecuenciasPensiones , caption = "Frecuencia absoluta y relativa de montos de pensión rango", align = "|l|c|c|c|c|c|" , label = "etiqueta", digits = 0, include.rownames = FALSE, include.colnames = T, format.args = list(big.mark = c(","), decimal.mark = ".")))
+
+
+```
+
+
+Pirámide Poblacional 
+
+```{r}
+#Se genera la pirámide poblacional de los afiliados
+
+pobAfi <- Afiliados_31_12_2021 %>% group_by(Edad, Sexo)%>%
+  summarize(Cantidad =  n())
+
+n <- sum(pobAfi$Cantidad[pobAfi$Sexo=="M"])
+m <- sum(pobAfi$Cantidad[pobAfi$Sexo=="F"])
+
+
+pobAfi$Cantidad[pobAfi$Sexo == "M"] <- -pobAfi$Cantidad
+
+pobAfi$Cantidad[pobAfi$Sexo=="M"] <-
+                pobAfi$Cantidad[pobAfi$Sexo=="M"]/n
+pobAfi$Cantidad[pobAfi$Sexo=="F"] <-
+                pobAfi$Cantidad[pobAfi$Sexo=="F"]/m
+colnames(pobAfi)[3] <- "Porcentaje"
+
+plot2 <-pobAfi %>% ggplot(aes(x=Edad, y=Porcentaje*100, fill=Sexo)) +
+  geom_bar(stat="identity") +
+  ylab('Porcentaje')+
+  coord_flip()+
+  theme_minimal()+scale_fill_brewer(palette='Set1')+
+  labs(fill='Sexo')
+plot2
+ggsave("plot2.eps")
+```
+
+
+Pirámide Poblacional Pensionados
+
+```{r}
+#Se genera la piramide poblacional actual de pensionados
+
+pobPen <- Pensionados_31_12_2021 %>% group_by(Edad, SEX)%>%
+  summarize(Cantidad =  n())
+
+n <- sum(pobPen$Cantidad[pobPen$SEX=="M"])
+m <- sum(pobPen$Cantidad[pobPen$SEX=="F"])
+
+
+pobPen$Cantidad[pobPen$SEX == "M"] <- -pobPen$Cantidad
+
+pobPen$Cantidad[pobPen$SEX=="M"] <-
+  pobPen$Cantidad[pobPen$SEX=="M"]/n
+pobPen$Cantidad[pobPen$SEX=="F"] <-
+  pobPen$Cantidad[pobPen$SEX=="F"]/m
+colnames(pobPen)[3] <- "Porcentaje"
+
+plot3 <- pobPen %>% ggplot(aes(x=Edad, y=Porcentaje*100, fill=SEX)) +
+  geom_bar(stat="identity") +
+  ylab('Porcentaje')+
+  coord_flip()+
+  theme_minimal()+scale_fill_brewer(palette='Set1')+
+  labs(fill='Sexo')
+plot3
+ggsave("plot3.eps")
+```
+
+
+
+
+# Funciones empleadas en otras funciones
 
 
 
@@ -221,7 +434,8 @@ La función `beneficio` retorna el monto correspondiende de pensión de acuerdo 
 
 `salario` (numeric): es el salario actual del individuo.
 
-`k` (numeric): tiempo transcurrido del momento de valoración y momento esperado de saldia.
+`k` (numeric): tiempo transcurrido del momento de valoración y momento esperado de salida.
+
 ```{r}
 # Porcentaje de pensión
 porcentaje_de_pension <- function(antiguedad) {
@@ -1115,12 +1329,19 @@ formatC(total_estocastico, format = "f", big.mark = ",", digits = 3, decimal.mar
 La siguiente funcion es la empleada para calcular el costo del beneficio obtenido de acuerdo al decremento de vejez o invalidez, es llamada `DecrementoIV` y recibe:
 
 `Edad` (numeric): es la edad cumplida por el individuo.
+
 `hombre` (boolean): indica si el individuo es hombre (`TRUE`) o mujer (`FALSE`).
+
 `antiguedad` (numeric): es el tiempo que lleva el individuo laborando en la empresa.
+
 `ultimo_salario` (numeric): último salario que está recibiendo el individuo.
+
 `tasa_decuento` (numeric): tasa empleada para calcular los montos a valor presente.
+
 `tasa_cre_salario` (numeric): es la tasa real de crecimiento salarial.
+
 `decremento` (numeric): es el número de decremento que se quiere valorar.
+
 `n` (numeric): indica el tiempo en el que puede recibir la pensión. Si se coloca $n=1$ se tiene el individuo puede recibir la pensión
 en el periodo en tránsito y el año siguiente.
 
@@ -1204,11 +1425,17 @@ DecrementosIV <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuen
 Se programa la función para estimar la anualidad cierta de 10 años obtenida tras la muerte del individuo `DecrementoM`, recibe los parámetros:
 
 `Edad` (numeric): es la edad cumplida por el individuo.
+
 `hombre` (boolean): indica si el individuo es hombre (`TRUE`) o mujer (`FALSE`).
+
 `antiguedad` (numeric): es el tiempo que lleva el individuo laborando en la empresa.
+
 `ultimo_salario` (numeric): último salario que está recibiendo el individuo.
+
 `tasa_decuento` (numeric): tasa empleada para calcular los montos a valor presente.
+
 `tasa_cre_salario` (numeric): es la tasa real de crecimiento salarial.
+
 `n` (numeric): indica el tiempo en el que puede recibir la pensión. Si se coloca $n=1$ se tiene el individuo puede recibir la pensión
 en el periodo en tránsito y el año siguiente.
 
@@ -1337,13 +1564,21 @@ En esta sección se programan las funciones necesarias para el cálculo de los c
 ## Función para liquidación
 
 Se programa la función `liquidacion` que corresponde a la empleada para el cálculo de la liquidación dados los aportes que se debieron realizar, recibe:
+
 `edad` (numeric): la edad cumplida por el individuo.
+
 `salario_actual` (numeric): es el salario con el que cuenta actualmente el individuo.
+
 `antiguedad` (numeric): tiempo cumplido que lleva laborando en la empresa.
+
 `i` (numeric): tasa de decuento empleada para calcular los montos en valor presente.
+
 `inflacion` (numeric): inflación a largo plazo.
+
 `aumento_real` (numeric): aumento real que tienen los salarios.
+
 `porcentaje_aporte` (numeric): porcentaje de aportes que debieron realiza anteriormentes.
+
 `sexo` (boolean): indica si es hombre (`TRUE`) o mujer (`FALSE`).
 
 
@@ -1704,15 +1939,24 @@ beneficio <- function(antiguedad, decremento, salario, k, n = 5) {
 ## Distintos escenarios de reservas
 Se programó una función en la cuál se estiman cuales hubieran sido los valores de reservas
 si se hubieran cobrado distintos montos desde que se ingresó a la compañía.
+
 `reservas` es la función creada para estimar estas reservas que se hubieran obtenido, recibe:
+
 `edad` (numeric): edad cumplida por el individuo al momento de valoración.
+
 `salario_actual` (numeric): salario que recibe al momento de valoración.
+
 `antiguedad` (numeric): número de años cumplidos desde que se ingresó a la empresa.
+
 `i` (numeric): tasa empleada para estimar el valor presente.
+
 `inflacion` (numeric): inflación de largo plazo.
+
 `aumento_real` (numeric): aumento real de los salarios.
+
 `porcentaje_aporte` (numeric): porcentaje de aporte que se supone realizó desde que se ingresó,
 sobre los salarios.
+
 `sexo` (boolean): indica si el individuo es hombre (`TRUE`) o mujer (`FALSE`).
 
 ```{r}
@@ -1785,11 +2029,17 @@ reservas_mujeres_5<-mapply(
 ### Función masa salaria
 
 Se programa una función para estimar la masa salarial `cotizacionfutura`, recibe:
+
 `Edad` (numeric): edad cumplida a la fecha de valoración.
+
 `hombre` (boolean): indica si el individuo es hombre (`TRUE`) o mujer (`FALSE`).
+
 `ultimo_salario` (numeric): salario recibido en el año de valoración.
+
 `t` (numeric): omega de la tabla de mortalidad.
+
 `porcentaje_aporte`: indica el porcentaje que se quiere de los salarios futuros.
+
 
 ```{r}
 cotizacionfutura <- function(Edad, hombre, ultimo_salario, t=117,porcentaje_aporte=1) {
