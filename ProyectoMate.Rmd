@@ -1,6 +1,6 @@
 ---
 title: "Proyecto"
-
+autho: "Grupo 3"
 date: "`r format(Sys.time(), '%d %B %Y')`"
 
 linkedin: ""
@@ -24,7 +24,7 @@ output:
 ```{r setup, include=FALSE, message=FALSE, warning=FALSE}
 # Programacion hecha por Joshua Cervantes, Moisés Monge y Daniel Sabater
 # Se cargan los paquetes
-knitr::opts_chunk$set(echo = TRUE,include=TRUE)
+knitr::opts_chunk$set(echo = TRUE,include=TRUE,fig.align ='center')
 options(scipen = 999, digits = 4)
 library(lifecontingencies)
 library(tidyverse)
@@ -214,6 +214,8 @@ Las tablas de decrementos constituyen
  
 # Análisis estadístico
 
+### Esperanza de vida activos
+
 ```{r}
 #cálculo de las Esperanzas de vida para cada empleado
 
@@ -238,6 +240,11 @@ plot5 <- pobAfi %>% ggplot(aes(x=Edad, y=Cantidad, fill = Exn)) +
 
 ggsave("plot5.eps")
 plot5
+```
+
+### Esperanza de vida pensionados
+
+```{r}
 #cálculo de las Esperanzas de vida para cada jubilado 
 Pensionados_31_12_2021_2 <- Pensionados_31_12_2021%>%
   mutate(Exn = ifelse(SEX == "M",unlist(map2((Edad + 1), Edad, ~ exn(object = ListaDeTablasHombres[[.x]],x = .y,type = "curtate"))),unlist(map2((Edad + 1), Edad, ~ exn(object = ListaDeTablasMujeres[[.x]],x = .y,type = "curtate")))))
@@ -265,7 +272,7 @@ ggsave("plot4.eps")
 ```
 
 
-
+### Rango de salarios
 ```{r}
 library(readxl)
 library(data.table)
@@ -332,8 +339,11 @@ ggsave("plot1.eps" )
 
 
 plot1
+```
 
 
+
+```{r}
 
 #Pensionados 
 
@@ -352,7 +362,7 @@ print(xtable(tablaFrecuenciasPensiones , caption = "Frecuencia absoluta y relati
 ```
 
 
-Pirámide Poblacional 
+### Pirámide poblacional afiliadas
 
 ```{r}
 #Se genera la pirámide poblacional de los afiliados
@@ -383,7 +393,7 @@ ggsave("plot2.eps")
 ```
 
 
-Pirámide Poblacional Pensionados
+#### Pirámide poblacional pensionados
 
 ```{r}
 #Se genera la piramide poblacional actual de pensionados
@@ -591,14 +601,16 @@ salario_referencia(10, 900000, 2)
 ```
 
 En segundo lugar, se crea una función que, dado un vector con la distribución de una variable aleatoria discreta $X$ que toma valores en un subconjunto finito de $\mathbb{N}\cup\{0\}$, es decir, un vector de la forma
-\[
+
+$$
 \bigg( \mathbb{P}(X=0),\mathbb{P}(X\leq 1), \mathbb{P}(X\leq 2),\mathbb{P}(X\leq 3),\dots\bigg),
-\]
+$$
+
 así como un número $0<p<1$, entonces retorna un valor $k\in\{0,1,2,\dots\}$ tal que
 
-\[
+$$
 \mathbb{P}(X\leq k-1)<p\leq \mathbb{P}(X\leq k),
-\]
+$$
 
 que corresponde al $p$-cuantil de $X$. Esta función se utiliza en el algortimo de Bacinello (1986) para hallar el momento de ocurrencia de algún decremento bajo el segundo criterio que plantea dicho método. Recibe los parámetros
 
@@ -606,8 +618,7 @@ que corresponde al $p$-cuantil de $X$. Esta función se utiliza en el algortimo 
 
 -`p`: probabilidad de la cual se quiere calcular el cuantil
 
-```{r Función para localizar cuantiles en modelo estocástico, eval = FALSE
-}
+```{r Función para localizar cuantiles en modelo estocástico, eval = FALSE}
 
 hallar_cuantil <- function(distribucion, p) {
   if(p>max(distribucion)){k <- length(distribucion)-1}
@@ -620,8 +631,7 @@ hallar_cuantil <- function(distribucion, p) {
 
 #### Ejemplo
 
-```{r, echo=F, eval = FALSE
-}
+```{r, echo=F, eval = FALSE}
 
 set.seed(8000) 
 ```
@@ -629,7 +639,6 @@ set.seed(8000)
 Se presenta un ejemplo para hallar el cuantil correspondiente a una muestra uniforme en (0,1) `r runif(1)` con la distribución de $W_{30}$. Se verifica gráficamente el desempeño adecuado de la función. Observe que el valor retornado debe ser el menor valor de $k$ tal que $F_{W_{30}}(k)\geq u$
 
 ```{r, eval=FALSE}
-
 # Edad
 x <- 30
 xi <- 85
@@ -650,8 +659,7 @@ En el modelo estocástico para las personas afiliadas, será necesario calcular 
 
 La msima retorna un número, que corresponde al valor de la anualidad, suponiendo pagos mensuales de una unidad actualizados anualmente por inflación.
 
-```{r Función anualidad para modelo estocástico, eval = FALSE
-}
+```{r Función anualidad para modelo estocástico, eval = FALSE}
 
 # Se crea una función para calcular el monto de los beneficios si ocurre un decremento tras k años y la persona vive t años adicionales
 valor_anualidad <- function(k, t, v=1/1.07) {
@@ -665,6 +673,7 @@ valor_anualidad <- function(k, t, v=1/1.07) {
     PV_aux <- suma1 * v^(k + 1)
     return(PV_aux)
 }
+
 ```
 
 Para calcular los costos asociados a las personas afiliadas al plan ofrecido por la Compañía, se implementa una modificación de uno de los algortimos descritos en Bacinello (1988) bajo un modelo de múltiples decrementos. El mencionado algoritmo permite simular la variable aleatoria $W_{x}$ del tiempo (en años) de trabajo residual de un empleado activo de edad $(x)$. En esencia, el método proporciona un criterio para, en un primer paso y dada una muestra de una distribución $\mathcal{U}(0,1)$, decidir si una persona de edad $(x)$ se llega a jubilar por llegar a la edad máxima de jubilación, en cuyo caso resta solamente simular su tiempo de vida residual. En su defecto, el algoritmo proporciona una regla para asignar, de acuerdo a una segunda muestra de una distribución $\mathcal{U}(0,1)$, cuál de los decrementos restantes sucedió para que no se llegara a la edad máxima de jubilación. Como puede comprobarse, el método requiere a lo sumo dos muestras provenientes de una distribución $\mathcal{U}(0,1)$ en aras de obtener una muestra de $W_{x}$.
@@ -689,8 +698,7 @@ Asimismo, esta función retorna un vector de cuatro entradas, correspondiente al
 
 ### Versión con simulación individual
 
-```{r Modelo estocástico individual, eval = FALSE
-}
+```{r Modelo estocástico individual, eval = FALSE}
 
 costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, cant_simulaciones, lista_tablas_decrementos, lista_tablas_mortalidad) {
   x <- edad
@@ -829,8 +837,7 @@ costo_afiliado_estocastico <- function(edad, salario, edad_maxima, antiguedad, c
 
 Se calcula una simulación con la primera mujer de la tabla y 100 simulaciones.
 
-```{r Ejemplo del uso de la función, eval = FALSE
-}
+```{r Ejemplo del uso de la función, eval = FALSE}
 
 i <- 1
 cant_simulaciones<-100
@@ -871,8 +878,7 @@ edad, es decir, es una lista de objetos tipo "mdt".
 Asimismo, esta función retorna un vector de cuatro entradas, correspondiente al cálculo del costo para el plan de la Compañía asociado a al grupo de una misma edad de acuerdo al método estocástico según, en orden, los riesgos de invalidez, jubilación y muerte, teniendo por cuarta entrada la suma de las anteriores.
 
 
-```{r Modelo estocástico por grupos de edad, eval = FALSE
-}
+```{r Modelo estocástico por grupos de edad, eval = FALSE}
 
 costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima, antiguedades, cant_simulaciones, lista_tablas_decrementos, lista_tablas_mortalidad) {
   x <- edad
@@ -1092,8 +1098,7 @@ costo_afiliado_estocastico_grupo_etario <- function(edad, salarios, edad_maxima,
 
 Se realiza el cálculo para el grupo de mujeres de 46 años con 1000 simulaciones.
 
-```{r, eval = FALSE
-}
+```{r, eval = FALSE}
 edad <- 46
 datos <- afil_mujeres %>% filter(Edad == edad) %>% select(Salario, Antiguedad)
 salarios <- datos$Salario
@@ -1156,7 +1161,7 @@ write.csv(costos_grupal_estoc_m,"Costos estocástico mujeres por grupo etario.cs
 
 
 
-### Funcion para determinar pension de personas ya pensionadas
+### Función para determinar pension de personas ya pensionadas
 
 Se ha creado una función para el calculo estocástico de las pensiones en curso de pago llamada `pension_pen`. Recibe los siguiente parámetros:
 `base_de_datos` (data.frame): esta es la base de los ya pensionados.
@@ -1202,7 +1207,7 @@ pension_pen <- function(base_de_datos, sex, t_descuento, m, simulaciones) {
 }
 ```
 
-## Calculo de pension estocastico
+## Cálculo de pension estocastico
 
 ```{r, eval = FALSE}
 #Resultado de los pensionados
@@ -1219,19 +1224,20 @@ close(fileConn)
 ```
 
 
-# Deterministico
 
 
 
-
-
-# Modelos Deterministicos
+# Modelos determinísticos
 
 ## Modelo para personas ya pensionadas
 Aqui se procede a programar la funcion para estimar valor de las pensiones en curso de pago `PensionMensualDeterministico`
+
 `Edad` (numeric): corresponde a la edad cumplida por el individuos.
+
 `hombre` (boolean): Se indica si es hombre (TRUE) o mujer (FALSE).
+
 `MontoDePension` (numeric): Monto de pension actual.
+
 `tasa_descuento` (numeric): tasa de interes empleada para estimar el valor presente.
 
 ```{r}
@@ -1267,7 +1273,7 @@ PensionMensualDeterministico <- function(Edad, hombre, MontoDePension, tasa_desc
 
 
 
-### Calculo para las pensiones de los ya pensionados
+### Cálculo para las pensiones de los ya pensionados
 
 ```{r}
 #En este chunk se procede a emplear la funcion para estimar las pensiones
@@ -1301,7 +1307,7 @@ MontoDePensionMensualParaMujeresDeterministicoPensionados <-
 ```
 
 ## Comparativa pensiones en curso de pago modelo estocástico y determinístico
-Se estima el error relativo del modelo estocástico respecto al deterministico, de las pensiones en curso de pago
+Se estima el error relativo del modelo estocástico respecto al determinístico, de las pensiones en curso de pago
 
 ```{r, eval=FALSE}
 ##Total de modelo deterministico
@@ -1325,7 +1331,8 @@ formatC(total_estocastico, format = "f", big.mark = ",", digits = 3, decimal.mar
 
 # Personal activo
 
-## Funcion para decrementos de invalidez y vejez
+## Función para decrementos de invalidez y vejez
+
 La siguiente funcion es la empleada para calcular el costo del beneficio obtenido de acuerdo al decremento de vejez o invalidez, es llamada `DecrementoIV` y recibe:
 
 `Edad` (numeric): es la edad cumplida por el individuo.
@@ -1421,7 +1428,7 @@ DecrementosIV <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuen
 
 
 
-## Funcion decremento muerte
+## Función decremento muerte
 Se programa la función para estimar la anualidad cierta de 10 años obtenida tras la muerte del individuo `DecrementoM`, recibe los parámetros:
 
 `Edad` (numeric): es la edad cumplida por el individuo.
@@ -1495,7 +1502,7 @@ DecrementoM <- function(Edad, hombre, antiguedad, ultimo_salario, tasa_descuento
 
 ```
 
-## Calculo de personas activas IVM
+## Cálculo de personas activas IVM
 
 En esta parte se realiza el cálculo del costo de las pensiones.
 
@@ -1620,7 +1627,7 @@ liquidacion <- function(edad, salario_actual, antiguedad, i, inflacion, aumento_
 
 
 
-## Calculo de costos de liquidación
+## Cálculo de costos de liquidación
 
 Aquí se estima los costos de liquidación tomando en cuenta que se pueden pensionar dentro de los siguiente dos años y el costo de liquidar o trasladar los aportes
 en caso de que se llegue a pensionar.
@@ -2080,5 +2087,31 @@ CostoTotal<-sum(afil_mujeres$Costo_plan)+sum(afil_hombres$Costo_plan)
 #Caso original
 (CostoTotal/ValorPresenteDeMasaSalarial)
 ```
+
+
+```{r}
+PrimasMedias<-rbind.data.frame(
+c(1, 723272752165, 0.1986, 0.1854),
+c(2, 430005465935, 0.1181, 0.1048),
+c(3, 706279705202, 0.1940, 0.1807),
+c(4, 419368899461, 0.1152, 0.1019),
+c(5, 57861820173,  0.0159, 0.0026),
+c(6, 54517956930,  0.0150, 0.0017),
+c(7, 104842224865, 0.0288, 0.0155),
+c(8, 329186804227, 0.0904, 0.0771),
+c(9, 321404395377, 0.0883, 0.0750),
+c(10,419368899461, 0.1152, 0.0163))
+
+
+colnames(PrimasMedias) <-c("Medida","Costo total (CRC)", "Sin reserva", "Con reserva")
+
+
+PrimasMedias %>%kable( caption = "Costo del plan y prima media nivelada seǵun medida considerada y supuesto sobre la reserva", format.args = list(decimal.mark = ",", big.mark = ".")) %>%
+    kable_styling(full_width = F) %>%
+    kable_material() %>%
+    row_spec(0, bold = T, color = "white", background = "#159957")
+
+
+````
 
 
